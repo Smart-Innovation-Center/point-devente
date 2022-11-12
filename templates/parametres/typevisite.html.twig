@@ -1,0 +1,245 @@
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+    <nav role="navigation" aria-labelledby="breadcrumb-intro-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="">Gestion des paramétres</a></li>
+            <li class="breadcrumb-item"><a href="{{path ('typevisite')}}">Type de visite</a></li>
+            <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{tab}}</li>
+        </ol>
+    </nav>
+     <div class="p-3 mb-2 bg-primary page-current">TYPE DE VISITE</div>
+    <div class="main-content container-fluid">
+        <div class="page-title">             
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('typevisite')}}">Liste des types de visite</a>
+                </li>
+                {# <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'ajouter' ) %} active{% endif %}" href="{{path ('addtypevisite')}}">Ajouter un type de visite</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'importer' ) %} active{% endif %}" href="{{path ('importtypevisite')}}">Importer des types visites</a>
+                </li> #}
+                {% if dataSelect is defined  %}
+                <li class="nav-item" role="presentation" style="display:{% if tab == "modifier" %}block {% else %}none{% endif %}">
+                    <a class="nav-link {% if tab is same as( 'modifier' ) %} active{% endif %}" href="{{path ('edittypevisite',{'id':dataSelect['id']})}}">Modifier un type de visite</a>
+                </li>
+                {% endif %}  
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <!-- Liste des types de visite  -->
+                <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab"> 
+                    {% if databd is defined  %}
+                        <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                            <form method="POST" action="{{path ('recherchetypevisite')}}">
+                                <div class="form-row">
+                                    <div class="form-group col-md-3">
+                                        <label>Libelle </label>
+                                        <input type="text" name="libelle" {% if saisie is defined %} value="{{ saisie['libelle']}}" {% endif %} class="form-control majuscule">
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>Statut</label>
+                                        <select class="custom-select" name="status" {% if saisie is defined %} value="{{ saisie['status']}}" {% endif %}>
+                                            <option value="">Sélectionner un statut</option>
+                                            {% for colonne in statut %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper  }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-2" style="padding-top: 37px;">
+                                        <button type="submit"  class="btn btn-primary">Rechercher</button>
+                                    </div>
+                                    <div class="form-group col-md-2" style="padding-top: 37px;">
+                                        <a class="btn btn-success" href="{{path ('typevisite')}}" role="button">Annuler la recherche</a>
+                                    </div>
+                                </div>
+                            </form> 
+                        </div>
+                        <table id="table" class="table table-hover display">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Libelle</th>
+                                    {# <th class="text-center">Type PDV</th>
+                                    <th class="text-center">Type Contrôleur</th> #}
+                                    <th class="text-center">Description</th>
+                                    <th class="text-center">Statut</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in databd|batch(1, 'No item') %}
+                                    <tr>
+                                        {% for data in row %}
+                                            <td class="text-center">{{ data['libelle']|upper }}</td>
+                                            {# <td class="text-center">
+                                                {% if data['type_pdvs'] is not null %}
+                                                    {% for data in data['type_pdvs'] %}
+                                                        { {{data|upper }}}
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                {% if data['typeActeurs'] is not null %}
+                                                    {% for data in data['typeActeurs'] %}
+                                                        { {{data|upper }} }
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </td> #}
+                                            <td class="text-center">{{ data['description']|upper }}</td>
+                                            <td class="text-center td-status">
+                                                {% if data['actived'] %}
+                                                    <span class="status-actif">ACTIF</span>
+                                                {% else %}
+                                                    <span class="status-inactif">INACTIF</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="dropdown">
+                                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        Action
+                                                    </button>
+                                                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                                        <a class="dropdown-item" href="{{ path ('edittypevisite',{'id':data['id']}) }}">Modifier</a>
+                                                        {% if data['actived'] %}
+                                                            <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('desactivertypevisite',{'id':data['id']}) }},Désactivation,désactiver,ce type de visite : {{ data['libelle']|upper }}">Désactiver</button>
+                                                        {% else %}
+                                                            <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('activertypevisite',{'id':data['id']}) }},Activation,activer,ce type de visite : {{ data['libelle']|upper }}">Activer</button>
+                                                        {% endif %}
+                                                        {# <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('deltypevisite',{'id':data['id']}) }},Suppression,supprimer,ce type de visite : {{ data['libelle']|upper }}">Supprimer</button> #}
+                                                    </div>
+                                                </div>  
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %} 
+                            </tbody>              
+                            <tfoot>
+                            </tfoot> 
+                        </table>
+                    {% endif %}
+                </div>
+                <!-- ajouter un type de visite  -->
+                <div class="tab-pane fade {% if tab == "ajouter" %}show active{% endif %}" id="ajouter" role="tabpanel" aria-labelledby="ajouter-tab">                    
+                    <form method="POST" action="{{path ('addtypevisite')}}">
+                        <div class="form-row">
+                            <label class="col-2 text-right">Libelle <span style="color: red">*</span></label>
+                            <div class="form-group col-md-6">
+                                <input type="text" name="libelle" class="form-control majuscule" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Type de PDV <span style="color: red">*</span></label>
+                            <div class="form-group col-md-6">
+                                <select class="typepdv" name="typepdv[]" multiple="multiple">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Type contrôleur <span style="color: red">*</span></label>
+                            <div class="form-group col-md-6">
+                                <select class="typeacteur" name="typeActeurs[]" multiple="multiple">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Description </label>
+                            <div class="form-group col-md-6">
+                                <textarea class="form-control majuscule" name="description" rows="5" cols="50"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-row justify-content-center">
+                            <div class="form-group col-md-2">
+                                <a href="{{ path ('typevisite') }}" class="btn btn-secondary">
+                                    Annuler
+                                </a>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <button type="submit"  class="btn btn-primary mb-2">Enregistrer</button>
+                            </div>
+                        </div>
+                    </form> 
+                </div>
+                <!-- importer des types de visite  -->
+                <div class="tab-pane fade {% if tab == "importer" %}show active{% endif %}" id="importer" role="tabpanel" aria-labelledby="importer-tab">
+                    <form  action="{{path ('importtypevisite')}}" method="POST" enctype="multipart/form-data">
+
+                        <div class="form-row float-right">
+                            <img src="{{ asset ('assets/files/typevisite.png')}}" alt="Exemple de fichier à importer" class="preview_document" data-toggle="tooltip" data-placement="top" title="Exemple de fichier à importer au format CSV ( Séparateur: point-virgule )">
+                        </div>
+                        <div class="form-row justify-content-center" style="margin-bottom: 2%">
+                            <span class="status-actif" style="font-size: larger;text-align: center" >Importer le fichier en vous basant sur l'image au format CSV ( Séparateur: point-virgule ) <br> la colonne ID reste vide</span>
+                        </div>
+                        <div class="form-row justify-content-center">
+                            <label class="col-2 text-right">Type de PDV <span style="color: red">*</span></label>
+                            <div class="form-group col-md-6">
+                                <select class="typepdv" name="typepdv[]" multiple="multiple">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row justify-content-center">
+                            <label class="col-2 text-right">Fichier <span style="color: red">*</span></label>
+                            <div class="form-group col-md-6">
+                                <input type="file" name="listevisite" class="custom-file" accept=".csv" required>
+                            </div>
+                        </div>
+                        <div class="form-row justify-content-center">
+                            <div class="form-group col-md-2">
+                                <a href="{{ path ('typevisite') }}" class="btn btn-secondary">
+                                    Annuler
+                                </a>  
+                            </div>  
+                            <div class="form-group col-md-2">
+                                <button type="submit" class="btn btn-primary mb-2">Enregistrer</button>
+                            </div>  
+                        </div> 
+                    </form> 
+                </div>  
+                <!-- modifier un type de visite  -->
+                <div class="tab-pane fade {% if tab == "modifier" %}show active{% endif %}" id="modifier" role="tabpanel" aria-labelledby="modifier-tab">
+                    {% if dataSelect is defined  %}                    
+                        <form action="{{path ('edittypevisite',{'id':dataSelect['id']})}}" method="POST" enctype="multipart/form-data">
+                            <div class="form-row">
+                                <label class="col-2 text-right">Libelle <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <input type="text" value="{{ dataSelect['libelle'] }}"  class="form-control majuscule" required disabled>
+                                    <input type="hidden" name="libelle" value="{{ dataSelect['libelle'] }}"  class="form-control majuscule">
+                                </div>
+                            </div>
+                            {# <div class="form-row">
+                                <label class="col-2 text-right">Type de PDV <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <select id="typepdv" name="typepdv[]" multiple="multiple">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type contrôleur <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <select id="typeacteur" name="typeActeurs[]" multiple="multiple">
+                                    </select>
+                                </div>
+                            </div> #}
+                            <div class="form-row">
+                                <label class="col-2 text-right">Description</label>
+                                <div class="form-group col-md-6">
+                                    <textarea class="form-control majuscule" name="description" rows="5" cols="50">{{ dataSelect['description'] }}</textarea>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('typevisite') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <button type="submit"  class="btn btn-primary mb-2">Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>              
+                    {% endif %}  
+                </div>
+            </div>      
+        </div> 
+    </div> 
+{% endblock %}

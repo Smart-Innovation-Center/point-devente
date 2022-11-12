@@ -1,0 +1,127 @@
+<nav id="sidebarMenu" role="navigation" class="col-lg-2 col-md-3 d-md-block bg-light sidebar collapse " style="height: 100vh;position:fixed">
+    <div class="sidebar-sticky pt-3">
+        {% for row in menu|batch(1, 'No item') %}
+            {% for menu in row %}
+                <div class="accordion" id="accordionExample-3" style="padding:3px">
+                    <ul class="nav flex-column">
+                        <h4 class="mb-0">
+                            <li class="nav-item border-bottom"><a class="nav-link {% if menu.0 is same as( 'dashborad' ) %}active{% endif %}" href="{{path ('accueil')}}">Dashboard</a></li>
+                        </h4>
+                    </ul>
+                    {% if app.session.get('superAdmin') is not null %}
+                        <div class="card border-bottom">
+                            <div class="card-header" id="headingOne-3">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link btn-sm {% if menu.0 is same as( 'parametre' ) %}collapsed{% endif %}" aria-expanded="{% if menu.0 is same as( 'parametre' ) %}true{% else %}false{% endif %}" type="button" data-toggle="collapse" data-target="#collapseOne-3" aria-controls="collapseOne-3">
+                                        Gestion des Paramètres
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseOne-3" class="collapse {% if menu.0 is same as( 'parametre' ) %}show{% endif %}" aria-labelledby="headingOne-3" data-parent="#accordionExample-3">
+                                <div class="card-body">
+                                    <ul class="nav flex-column">
+                                        <li class="nav-item border-bottom"><a class="nav-link {% if menu.1 is same as( 'typeacteur' ) %}active{% endif %}" href="{{path ('typeacteur')}}">Type contrôleur</a></li>
+                                        <li class="nav-item border-bottom"><a class="nav-link {% if menu.1 is same as( 'typepdv' ) %}active{% endif %}" href="{{path ('typepdv')}}">Type de PDV</a></li>
+                                        <li class="nav-item border-bottom"><a class="nav-link {% if menu.1 is same as( 'typevisite' ) %}active{% endif %}" href="{{path ('typevisite')}}">Type de visite</a></li>
+                                        <li class="nav-item border-bottom"><a class="nav-link {% if menu.1 is same as( 'partenaire' ) %}active{% endif %}" href="{{path ('partenaire')}}">Partenaires</a></li>
+                                        <li class="nav-item"><a class="nav-link {% if menu.1 is same as( 'role' ) %}active{% endif %}" href="{{path ('role')}}">Rôles</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card border-bottom">
+                            <div class="card-header" id="headingTwo-3">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link btn-sm {% if menu.0 is same as( 'acteur' ) %}collapsed{% endif %}" aria-expanded="{% if menu.0 is same as( 'acteur' ) %}true{% else %}false{% endif %}" type="button" data-toggle="collapse" data-target="#collapseTwo-3" aria-controls="collapseTwo-3">
+                                        Gestion des Acteurs
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseTwo-3" class="collapse {% if menu.0 is same as( 'acteur' ) %} show{% endif %}" aria-labelledby="headingTwo-3" data-parent="#accordionExample-3">
+                                <div class="card-body">
+                                    <ul class="nav flex-column">
+                                        <li class="nav-item"><a class="nav-link {% if menu.1 is same as( 'acteur' ) %}active{% endif %}" href="{{path ('acteur')}}">Acteurs</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card border-bottom">
+                            <div class="card-header" id="headingThree-3">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link btn-sm {% if menu.0 is same as( 'pdv' ) %}collapsed{% endif %}" aria-expanded="{% if menu.0 is same as( 'pdv' ) %}true{% else %}false{% endif %}" type="button" data-toggle="collapse" data-target="#collapseThree-3" aria-controls="collapseThree-3">
+                                        Gestion des PDV
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseThree-3" class="collapse {% if menu.0 is same as( 'pdv' ) %} show{% endif %}" aria-labelledby="headingThree-3" data-parent="#accordionExample-3">
+                                <div class="card-body">
+                                    <ul class="nav flex-column">
+                                        <li class="nav-item"><a class="nav-link {% if menu.1 is same as( 'pdv' ) %}active{% endif %}" href="{{path ('pdv')}}"> PDV</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="accordion" id="accordionExample-4">
+
+                    {% if app.session.get('boom') is null %}
+
+                        <div class="card border-bottom"  style="display: {% if app.session.get('superAdmin') is not null %} block {% else %} none {% endif %}">
+                            <div class="card-header" id="headingOne-4">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link btn-sm {% if menu.0 is same as( 'formulaire' ) %}collapsed{% endif %}" aria-expanded="{% if menu.0 is same as( 'formulaire' ) %}true{% else %}false{% endif %}" type="button" data-toggle="collapse" data-target="#collapseOne-4" aria-controls="collapseOne-4">
+                                        Gestion des Formulaires
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseOne-4" class="collapse {% if menu.0 is same as( 'formulaire' ) %} show{% endif %}" aria-labelledby="headingOne-4" data-parent="#accordionExample-4">
+                                <div class="card-body">
+                                    <ul class="nav flex-column">
+                                        <li class="nav-item border-bottom"><a class="nav-link {% if menu.1 is same as( 'parametreformulaire' ) %}active{% endif %}" href="{{path ('parametreformulaire')}}">Paramétres Formulaire</a></li>
+                                        <li class="nav-item border-bottom"><a class="nav-link {% if menu.1 is same as( 'dysfonctionnement' ) %}active{% endif %}" href="{{path ('dysfonctionnement')}}">Paramétrages des dysfonctionnements</a></li>
+                                        {# <li class="nav-item border-bottom"><a class="nav-link {% if menu.1 is same as( 'prevalisation' ) %}active{% endif %}" href="{{path ('prevalisation')}}">Formulaire de Pré-validation</a></li> #}
+                                        <li class="nav-item"><a class="nav-link {% if menu.1 is same as( 'formulaires' ) %}active{% endif %}" href="{{path ('formulaire')}}"> Formulaires</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card border-bottom">
+                            <div class="card-header" id="headingTwo-4">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link btn-sm {% if menu.0 is same as( 'reporting' ) %}collapsed{% endif %}" aria-expanded="{% if menu.0 is same as( 'reporting' ) %}true{% else %}false{% endif %}" type="button" data-toggle="collapse" data-target="#collapseTwo-4" aria-controls="collapseTwo-4">
+                                        Reporting
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapseTwo-4" class="collapse {% if menu.0 is same as( 'reporting' ) %} show{% endif %}" aria-labelledby="headingTwo-4" data-parent="#accordionExample-4">
+                                <div class="card-body">
+                                    <ul class="nav flex-column">
+                                        <li class="nav-item"><a class="nav-link {% if menu.1 is same as( 'historiques' ) %}active{% endif %}" href="{{path ('historiques')}}">Contrôles effectués</a></li>
+                                        <li class="nav-item border-top border-bottom" style="display: {% if app.session.get('superAdmin') is not null %} block {% else %} none {% endif %}"><a class="nav-link {% if menu.1 is same as( 'pdv_reporting' ) %}active{% endif %}" href="{{path ('pdv_reporting')}}"> Listes des PDV</a></li>
+                                        <li class="nav-item" style="display: {% if app.session.get('superAdmin') is not null %} block {% else %} none {% endif %}"><a class="nav-link {% if menu.1 is same as( 'geolocalisationcontrole' ) %}active{% endif %}" href="{{path ('geolocalisationcontrole')}}">Géolocalisation PDV</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                         {% if app.session.get('superAdmin') is not null %}
+                            <ul class="nav flex-column">
+                                <h4 class="mb-0">
+                                    <li class="nav-item border-bottom"><a class="nav-link {% if menu.0 is same as( 'prevalisation' ) %}active{% endif %}" href="{{path ('prevalisation')}}">Délocalisation\Infiltration </a></li>
+                                </h4>
+                            </ul>
+                        {% endif %}
+                   {% else %}
+                        <ul class="nav flex-column">
+                            <h4 class="mb-0">
+                                <li class="nav-item border-bottom"><a class="nav-link {% if menu.0 is same as( 'prevalisation' ) %}active{% endif %}" href="{{path ('prevalisation')}}">Délocalisation\Infiltration </a></li>
+                            </h4>
+                        </ul>
+                    {% endif %}
+
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+</nav>

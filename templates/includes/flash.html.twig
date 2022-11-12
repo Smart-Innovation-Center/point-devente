@@ -1,0 +1,227 @@
+{#flash message alert #}
+<div class=" fixed-right">
+    {% for message in app.flashes('info') %}
+        <div class="bg-dark p-3  flash-message"  id="info">
+            <div class="alert alert-success" role="alert">
+                <span class="alert-icon"><span class="sr-only">Success</span></span>
+                <p>{{ message }}</p>
+            </div>
+        </div>
+    {% endfor %}
+    {% for  message in app.flashes('error') %}
+        <div class="bg-dark p-3  flash-message"  id="error">
+            <div class="alert alert-danger" role="alert">
+                <span class="alert-icon"><span class="sr-only">Danger</span></span>
+                <p>{{ message }}</p>
+            </div>
+        </div>
+    {% endfor  %}      
+</div>
+
+<!-- Modal de confirmation de suppression,activer,desactiver -->
+<div class="modal fade" id="confirmeAction" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="confirmeAction" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded">
+            <div class="modal-header">
+            </div>
+            <div class="modal-body">
+                <form method="POST" enctype="multipart/form-data"> <!-- path de validation -->
+                    <div class="text-center" style="line-height:30px">
+                        <img src="{{asset ('assets/img/warning.svg')}}" alt="Warning" height="100px"><br/><br/>
+                        <h3 class="modal-title"></h3><!-- titre de l'action -->
+                        <p></p><!-- Message de confiirmation de l'action -->
+                        <button type="button" class="btn btn-info rounded" data-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary rounded">Valider</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'invalidation d'une visite -->
+<div class="modal fade" id="invalidationVisite" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="confirmeAction" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded">
+            <div class="modal-header">
+            </div>
+            <div class="modal-body">
+                <form method="POST" enctype="multipart/form-data"> <!-- path de validation -->
+                    <div class="text-center" style="line-height:30px;margin-bottom: 20px">
+                        <img src="{{asset ('assets/img/warning.svg')}}" alt="Warning" height="100px"><br/><br/>
+                        <h3 class="modal-title"></h3><!-- titre de l'action -->
+                    </div>
+                    <div class="form-row justify-content-center">
+                        <div class="form-group col-md-8">
+                            <textarea class="form-control" name="motif" placeholder="Motif de rejet de cette visite" required></textarea>
+                        </div>
+                    </div>
+                    <div class="text-center" style="line-height:30px">
+                        <button type="button" class="btn btn-info rounded" data-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary rounded">Valider</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de réaffectation d'une visite -->
+<div class="modal fade" id="reaffectationVisite" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="confirmeAction" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded">
+            <div class="modal-header">
+            </div>
+            <div class="modal-body">
+                <form method="POST" enctype="multipart/form-data"> <!-- path de validation -->
+                    <div class="text-center" style="line-height:30px;margin-bottom: 20px">
+                        <img src="{{asset ('assets/img/warning.svg')}}" alt="Warning" height="100px"><br/><br/>
+                        <h3 class="modal-title"></h3><!-- titre de l'action -->
+                    </div>
+
+                    {% if tab is defined %}
+                        {% if tab is same as('detail') or tab is same as('detailadministration')  %}
+
+                            <div class="form-row">
+                                <label class="col-3 text-right">Type de visite <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <select name="typeVisit" class="custom-select" required>
+                                        <option value="">Choisir un type</option>
+                                        {% for colonne in typevisite %}
+                                            {% if colonne['actived'] %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-3 text-right">Type Contôleur <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <select class="custom-select listeControleActeur" onChange="listeControleActeur()" required>
+                                        <option value="">Sélectionner un type</option>
+                                        {% for colonne in typeacteur %}
+                                            <option value="{{ path ('listeacteurs',{'id':colonne['id']}) }}" data-typeselect="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <label class="col-3 text-right">Acteur <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <select class="custom-select" id="typeacteurSelect" name="acteur" required>
+                                        <option value="">Sélectionner un acteur</option>
+                                    </select>
+                                </div>
+                            </div>
+                        {% endif  %}
+                    {% endif  %}
+
+                    <div class="text-center" style="line-height:30px">
+                        <button type="button" class="btn btn-info rounded" data-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary rounded">Valider</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{#flash message formulaire#}
+<a href="#" data-toggle="modal" data-backdrop="static" class="d-none" data-target="#SweetModal" data-title="Feedback">modal</a>
+<div id="SweetModal" class="modal fade">
+    <div class="modal-dialog" role="document" id="sweetModalDialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="sweetModalTitle"></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body" id="sweetModalBody">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a data-toggle="modal" data-backdrop="static" href="#SweetModal1" class="d-none"></a>
+<div class="modal fade col-xs-12" id="SweetModal1" tabindex="-1" role="dialog" aria-hidden="true">
+    <div id="sweetModalDialog" class="modal-dialog">
+        <div class="modal-content" style="top:40px">
+            <div class="modal-header">
+                <h4 id="sweetModalTitle" class="modal-title"></h4>
+                <button type="button" class="close close_modal1" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <button type="button" class="btn-link pull-right print_me d-none" data-target="#SweetModal1 #sweetModalBody" style="margin-top:-5px" data-toggle="tooltip" data-placement="top" title="Imprimer"><i class="mdi-printer mdi"></i></button>
+            </div>
+            <div id="sweetModalBody" class="modal-body">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info" data-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a data-toggle="modal" data-backdrop="static" href="#SweetModal2" class="d-none"></a>
+<div class="modal fade col-xs-12" id="SweetModal2" tabindex="-1" role="dialog" aria-hidden="true">
+    <div id="sweetModalDialog" class="modal-dialog">
+        <div class="modal-content" style="top:80px">
+            <div class="modal-header">
+                <h4 id="sweetModalTitle" class="modal-title"></h4>
+                <button type="button" class="close close_modal2" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <button type="button" class="btn-link pull-right print_me d-none" data-target="#SweetModal2 #sweetModalBody" style="margin-top:-5px" data-toggle="tooltip" data-placement="top" title="Imprimer"><i class="mdi-printer mdi"></i></button>
+
+            </div>
+            <div id="sweetModalBody" class="modal-body">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info" data-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a data-toggle="modal" data-backdrop="static" href="#SweetModal3" class="d-none"></a>
+<div class="modal fade col-xs-12" id="SweetModal3" tabindex="-1" role="dialog" aria-hidden="true">
+    <div id="sweetModalDialog" class="modal-dialog">
+        <div class="modal-content" style="top:120px">
+            <div class="modal-header">
+                <h4 id="sweetModalTitle" class="modal-title"></h4>
+                <button type="button" class="close close_modal3" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <button type="button" class="btn-link pull-right print_me d-none" data-target="#SweetModal3 #sweetModalBody" style="margin-top:-5px" data-toggle="tooltip" data-placement="top" title="Imprimer"><i class="mdi-printer mdi"></i></button>
+            </div>
+            <div id="sweetModalBody" class="modal-body">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info" data-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a data-toggle="modal" data-backdrop="static" href="#SweetModal4" class="d-none"></a>
+<div class="modal fade col-xs-12" id="SweetModal4" tabindex="-1" role="dialog" aria-hidden="true">
+    <div id="sweetModalDialog" class="modal-dialog">
+        <div class="modal-content" style="top:160px">
+            <div class="modal-header">
+                <h4 id="sweetModalTitle" class="modal-title"></h4>
+                <button type="button" class="close close_modal3" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <button type="button" class="btn-link pull-right print_me d-none" data-target="#SweetModal4 #sweetModalBody" style="margin-top:-5px" data-toggle="tooltip" data-placement="top" title="Imprimer"><i class="mdi-printer mdi"></i></button>
+            </div>
+            <div id="sweetModalBody" class="modal-body">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info" data-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{#end flash message formulaire#}
+

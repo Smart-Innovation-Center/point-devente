@@ -1,0 +1,825 @@
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+
+     {% if filtre is defined %}
+        {% if filtre == false %}
+             <script>
+
+                 //appliquer la librairie dataTable sur le tableau de la page actuelle ainsi que les different bouton de telechargement
+                 bouton= [
+
+                     {
+                         extend: 'csv',
+                         exportOptions: {
+                             columns: ':visible'
+                         }
+                     },
+                     {
+                         extend: 'excel',
+                         exportOptions: {
+                             columns: ':visible'
+                         }
+                     },
+                     {
+                         extend: 'pdf',
+                         exportOptions: {
+                             columns: ':visible'
+                         }
+                     },
+                     {
+                         extend: 'print',
+                         exportOptions: {
+                             columns: ':visible'
+                         }
+                     },
+                     'colvis'
+                 ];
+                                
+                function getPDVDatayy(){
+
+                     var params = getData();
+
+                    if (idRegion!=""){
+                        $.ajax({
+                            method: "GET",
+                            url: idRegion,
+                            success: function(data){
+                                form_data  = $.parseJSON(data);
+                                $('#pdv').empty();
+                                $('#pdv').append("<option value=''>Choisir une ville</option>");
+                                for(var x = 0 ; x<form_data.length; x++) {
+                                    $("#donnees").append("<option value='" + form_data[x]['id'] + "' "+((region_id == form_data[x]['id'])?'selected':'')+">" + form_data[x]['libelle'].toUpperCase() + "</option>");
+                                }
+                            }
+                        });
+                    }else {
+                        $('#donnees').empty();
+                        $('#donnees').append("<option value=''>Choisir une ville</option>");
+                    }
+
+                }
+
+                 function getTypeActeurs(data){
+                     if(data != undefined){
+                         if(data.length > 0){
+                             var rl = [];
+                             for(var i = 0; i<data.length;i++){
+                                 rl.push('{'+data[i].libelle.toUpperCase()+'}');
+                             }
+                             return rl.join(' ');
+                         }
+                         return '';
+                     }
+                     return '';
+                 }
+
+                 function render_action(id){
+                    var route1 = '{{path ("editpdv",{"id":"xxx"})}}'.replace('xxx',''+id+'');
+                     return action_btn = '<div class="dropdown">'+
+                         '    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Action</button>'+
+                         '    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">'+
+                         '        <a class="dropdown-item" href="'+route1+'">Modifier</a>'+
+                         '    </div>'+
+                         '</div>';
+                 }
+
+                 $(document).ready(function () {
+                     $('#Pdvtable').dataTable({
+                         "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                         "iDisplayLength": 50,
+                         'bProcessing': true, 'bServerSide': true,
+                         'sAjaxSource': '{{ path('getPdv') }}',
+                         "url": "data.json",
+                         "dataSrc": "tableData",
+                         dom: 'Bfrtip',
+                         "scrollX": true,
+                         buttons:bouton,
+                         'fnServerData': function (source, data, callback) {
+                             $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                     var rows = [];
+                                     for(var i = 0; i<data.aaData.length ; i++){
+                                         const o = data.aaData[i];
+                                         const obj = {
+                                             type_pdv:(o.type_pdv !== undefined && o.type_pdv !== null)?o.type_pdv.libelle.toUpperCase():'',
+                                             profilePdv:(o.profilePdv !== undefined && o.profilePdv !== null)?o.profilePdv.toUpperCase():'',
+                                             nom_responsable: (o.nom_responsable !== undefined && o.nom_responsable !== null)?o.nom_responsable.toUpperCase():'',
+                                             nom_commercial: (o.nom_commercial !== undefined && o.nom_commercial !== null)?o.nom_commercial.toUpperCase():'',
+                                             numero_tete_pont: (o.numero_tete_pont !== undefined && o.numero_tete_pont !== null)?o.numero_tete_pont:'',
+                                             numero_pdv: (o.numero_pdv !== undefined && o.numero_pdv !== null)?o.numero_pdv:'',
+                                             partenaire: (o.partenaire !== undefined && o.partenaire !== null)?o.partenaire.libelle.toUpperCase():'',
+                                             type_acteur:getTypeActeurs(o.type_acteur),
+                                             ville: (o.ville !== undefined && o.ville !== null)?o.ville.libelle.toUpperCase():'',
+                                             initialAdresse: (o.initialAdresse !== undefined && o.initialAdresse !== null)?o.initialAdresse.toUpperCase():'',
+                                             addresse: (o.addresse !== undefined && o.addresse !== null)?o.addresse.toUpperCase():'',
+                                             action: render_action(o.id)
+                                         }
+                                         rows.push(obj);
+                                     }
+                                     data.aaData = rows;
+                                     callback(data);
+                                 }})
+                         },
+
+                         "columns": [
+                             { "data": function(d){return d.type_pdv} },
+                             { "data": function(d){return d.profilePdv} },
+                             { "data": function(d){return d.nom_responsable} },
+                             { "data": function(d){return d.nom_commercial} },
+                             { "data": function(d){return d.numero_tete_pont} },
+                             { "data": function(d){return d.numero_pdv} },
+                             { "data": function(d){return d.partenaire} },
+                             { "data": function(d){return d.type_acteur} },
+                             { "data": function(d){return d.ville} },
+                             { "data": function(d){return d.initialAdresse} },
+                             { "data": function(d){return d.addresse} },
+                             { "data": function(d){return d.action} },
+                         ]
+                     });
+                 });
+
+                 $(document).on('click','#submit_form',{passive:true},function () {
+                     if ( $.fn.dataTable.isDataTable('#Pdvtable') ) {
+                         $('#Pdvtable').DataTable().destroy();
+                     }
+
+                     var typepdv = $('#typepdv').val();
+                     var partenaire = $('#partenaire').val();
+                     var donnees = $('#donnees').val();
+                     var nom_commercial = $('#nom_commercial').val();
+                     var nom_responsable = $('#nom_responsable').val();
+                     var data = "nom_commercial="+nom_commercial+"&nom_responsable="+nom_responsable+"&typePdv="+typepdv+"&partenaire="+partenaire+"&ville="+donnees+"";
+
+                     var url = '{{ path("getSearchPdv", {'id': 'article_id'}) }}';
+                     url = url.replace("article_id", data);
+
+                     $('#Pdvtable').dataTable({
+                         "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                         "iDisplayLength": 50,
+                         'bProcessing': true, 'bServerSide': true,
+                         'sAjaxSource': url,
+                         "url": "data.json",
+                         "dataSrc": "tableData",
+                         dom: 'Bfrtip',
+                         "scrollX": true,
+                         buttons:bouton,
+                         'fnServerData': function (source, data, callback) {
+                             $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                     var rows = [];
+                                     for(var i = 0; i<data.aaData.length ; i++){
+                                         const o = data.aaData[i];
+                                         const obj = {
+                                             type_pdv:(o.type_pdv !== undefined && o.type_pdv !== null)?o.type_pdv.libelle.toUpperCase():'',
+                                             profilePdv:(o.profilePdv !== undefined && o.profilePdv !== null)?o.profilePdv.toUpperCase():'',
+                                             nom_responsable: (o.nom_responsable !== undefined && o.nom_responsable !== null)?o.nom_responsable.toUpperCase():'',
+                                             nom_commercial: (o.nom_commercial !== undefined && o.nom_commercial !== null)?o.nom_commercial.toUpperCase():'',
+                                             numero_tete_pont: (o.numero_tete_pont !== undefined && o.numero_tete_pont !== null)?o.numero_tete_pont:'',
+                                             numero_pdv: (o.numero_pdv !== undefined && o.numero_pdv !== null)?o.numero_pdv:'',
+                                             partenaire: (o.partenaire !== undefined && o.partenaire !== null)?o.partenaire.libelle.toUpperCase():'',
+                                             type_acteur:getTypeActeurs(o.type_acteur),
+                                             // region: (o.ville !== undefined && o.ville !== null)?o.ville.region.libelle.toUpperCase():'',
+                                             ville: (o.ville !== undefined && o.ville !== null)?o.ville.libelle.toUpperCase():'',
+                                             initialAdresse: (o.initialAdresse !== undefined && o.initialAdresse !== null)?o.initialAdresse.toUpperCase():'',
+                                             addresse: (o.addresse !== undefined && o.addresse !== null)?o.addresse.toUpperCase():'',
+                                             action: render_action(o.id)
+                                         }
+                                         rows.push(obj);
+                                     }
+                                     data.aaData = rows;
+                                     callback(data);
+                                 }})
+                         },
+
+                         "columns": [
+                             { "data": function(d){return d.type_pdv} },
+                             { "data": function(d){return d.profilePdv} },
+                             { "data": function(d){return d.nom_responsable} },
+                             { "data": function(d){return d.nom_commercial} },
+                             { "data": function(d){return d.numero_tete_pont} },
+                             { "data": function(d){return d.numero_pdv} },
+                             { "data": function(d){return d.partenaire} },
+                             { "data": function(d){return d.type_acteur} },
+                             // { "data": function(d){return d.region} },
+                             { "data": function(d){return d.ville} },
+                             { "data": function(d){return d.initialAdresse} },
+                             { "data": function(d){return d.addresse} },
+                             { "data": function(d){return d.action} },
+                         ]
+                     });
+
+                 });
+
+
+             </script>
+
+            <style>
+                .dataTables_scrollHeadInner , .dataTable {width:100% !important;}
+            </style>
+        {% endif %}
+     {% endif %}
+
+     <nav role="navigation" aria-labelledby="breadcrumb-intro-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="">Gestion des PDV</a></li>
+            <li class="breadcrumb-item"><a href="{{path ('pdv')}}">PDV</a></li>
+            <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{tab}}</li>
+        </ol>
+    </nav>
+     <div class="p-3 mb-2 bg-primary page-current">PDV</div>
+    <div class="main-content container-fluid">
+        <div class="page-title">             
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('pdv')}}">Lister des PDV</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'ajouter' ) %} active{% endif %}" href="{{path ('addpdv')}}">Ajouter un PDV</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'importer' ) %} active{% endif %}" href="{{path ('importpdv')}}">Importer des PDV</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'fiche' ) %} active{% endif %}" href="{{path ('addfichepdv')}}">Etablir la feuille de route</a>
+                </li>
+                {% if dataSelect is defined  %}
+                <li class="nav-item" role="presentation" style="display:{% if tab == "modifier" %}block {% else %}none{% endif %}">
+                    <a class="nav-link {% if tab is same as( 'modifier' ) %} active{% endif %}" href="{{path ('editpdv',{'id':dataSelect['id']})}}">Modifier un PDV</a>
+                </li>
+                {% endif %}  
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <!-- Liste des pdvs  -->
+                <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                    {% if databd is defined %}
+                        <div class="shadow-lg p-3 mb-5 bg-white rounded ">
+                            <form method="POST" action="">
+                                <div class="form-row justify-content-center">
+                                    <div class="form-group col-md-3">
+                                        <label>Type PDV </label>
+                                        <select class="custom-select" id="typepdv" name="typepdv" {% if saisie is defined %} value="{{ saisie['typepdv']}}" {% endif %}>
+                                            <option value="">Choisir un type</option>
+                                            {% for colonne in typepdv %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>Partenaires </label>
+                                        <select class="custom-select" id="partenaire" name="partenaire" {% if saisie is defined %} value="{{ saisie['partenaire']}}" {% endif %}>
+                                            <option value="">Choisir un partenaire</option>
+                                            {% for colonne in partenaire %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>Région</label>
+                                        <select class="custom-select listeVille" onChange="listeVilles()" id="region" name="region" {% if saisie is defined %} value="{{ saisie['region']}}" {% endif %}>
+                                            <option value="">Choisir une région</option>
+                                            {% for colonne in region %}
+                                                <option value="{{ path ('villes',{'id':colonne['id']}) }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>Ville</label>
+                                        <select class="custom-select" id="donnees" name="ville">
+                                            <option value="">Choisir une ville</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>Nom Commercial </label>
+                                        <input type="text" id="nom_commercial" name="nom_commercial" {% if saisie is defined %} value="{{ saisie['nom_commercial']}}" {% endif %} class="form-control majuscule" placeholder="Nom Commercial">
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>Nom du responsable </label>
+                                        <input type="text" id="nom_responsable" name="nom_responsable" {% if saisie is defined %} value="{{ saisie['nom_responsable']}}" {% endif %} class="form-control majuscule" placeholder="Nom du responsable">
+                                    </div>
+                                </div>
+                                <div class="form-row justify-content-center">
+                                    <div class="form-group col-md-2">
+                                        <button type="button" id="submit_form" class="btn btn-primary">Rechercher</button>
+                                    </div>
+                                    <div class="form-group col-md-2">
+                                        <a class="btn btn-success" href="{{path ('pdv')}}" role="button">Annuler la recherche</a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <table id="Pdvtable" class="table text-center table-hover display">
+                            <thead>
+                            <tr>
+                                <th class="text-center">Type de PDV</th>
+                                <th class="text-center">Profile</th>
+                                <th class="text-center">Nom Responsable</th>
+                                <th class="text-center">Nom Commercial</th>
+                                <th class="text-center">Numéro TP</th>
+                                <th class="text-center">Numéro PDV</th>
+                                <th class="text-center">Partenaire</th>
+                                <th class="text-center">Type Contrôleur</th>
+                                <th class="text-center">Ville</th>
+                                <th class="text-center">Adresse 1</th>
+                                <th class="text-center">Adresse 2</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                            </thead>
+                           <tbody>
+                           </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+
+
+                    {% endif %}
+                </div>
+                <!-- ajouter un pdvs  -->
+                <div class="tab-pane fade {% if tab == "ajouter" %}show active{% endif %}" id="ajouter" role="tabpanel" aria-labelledby="ajouter-tab">
+                    {% if tab == "ajouter" %}
+                        <form method="POST" action="{{path ('addpdv')}}">
+                        <div class="form-row">
+                            <label class="col-2 text-right">Type pdv <span style="color: red">*</span></label>
+                            <div class="form-group col-md-2">
+                                <select class="custom-select" name="typepdv" required>
+                                    <option value="">Choisir un type</option>
+                                    {% for colonne in typepdv %}
+                                        {% if colonne['actived'] %}
+                                            <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Profile<span style="color: red">*</span></label>
+                            <div class="form-group col-md-3">
+                                <input type="text" name="profilePdv" class="form-control majuscule" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Partenaires <span style="color: red">*</span></label>
+                            <div class="form-group col-md-3">
+                                <select class="custom-select" name="partenaire" required>
+                                    <option value="">Choisir un partenaire</option>
+                                    {% for colonne in partenaire %}
+                                        {% if colonne['actived'] %}
+                                            <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Région <span style="color: red">*</span></label>
+                            <div class="form-group col-md-3">
+                                <select class="custom-select listeVille" onChange="listeVilles()" name="region" required>
+                                    <option value="">Choisir une région</option>
+                                    {% for colonne in region %}
+                                        <option value="{{ path ('villes',{'id':colonne['id']}) }}">{{ colonne['libelle']|upper }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Ville <span style="color: red">*</span></label>
+                            <div class="form-group col-md-3">
+                                <select class="custom-select" id="donnees" name="ville" required>
+                                    <option value="">Choisir une ville</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Entité Contrôlé <span style="color: red">*</span></label>
+                            <div class="form-group col-md-3">
+                                <input type="text" name="entite_controle" class="form-control majuscule" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Nom Commercial <span style="color: red">*</span></label>
+                            <div class="form-group col-md-3">
+                                <input type="text" name="nom_commercial" class="form-control majuscule" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Numéro tête de pont <span style="color: red">*</span></label>
+                            <div class="form-group col-md-2">
+                                <input type="number" name="numero_tete_pont" class="form-control majuscule" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Numéro revendeur <span style="color: red">*</span></label>
+                            <div class="form-group col-md-2">
+                                <input type="number" name="numero_revendeur" class="form-control majuscule" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Numéro PDV <span style="color: red">*</span></label>
+                            <div class="form-group col-md-2">
+                                <input type="number" name="numero_pdv" class="form-control majuscule" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Nom du responsable </label>
+                            <div class="form-group col-md-3">
+                                <input type="text" name="nom_responsable" class="form-control majuscule" >
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Contact du responsable</label>
+                            <div class="form-group col-md-2">
+                                <input type="number" name="contact_responsable" class="form-control majuscule" >
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Localisation</label>
+                            <div class="form-group col-md-4">
+                                <input type="text" name="localisation" class="form-control majuscule" >
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Type contrôleur <span style="color: red">*</span></label>
+                            <div class="form-group col-md-6">
+                                <select class="typeacteur" name="typeacteur[]" multiple="multiple">
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row justify-content-center">
+                            <div class="form-group col-md-2">
+                                <a href="{{ path ('pdv') }}" class="btn btn-secondary">
+                                    Annuler
+                                </a>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <button type="submit"  class="btn btn-primary">Enregistrer</button>
+                            </div>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+                <!-- feuille de route un pdvs  -->
+                <div class="tab-pane fade {% if tab == "fiche" %}show active{% endif %}" id="fiche" role="tabpanel" aria-labelledby="fiche-tab">
+                    {% if tab == "fiche" %}                            
+                            <table  class="table table-hover display">
+                                <thead>
+                                <tr class="text-center">
+                                    <th colspan=2>CONTROLEUR</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr >
+                                    <td>
+                                        <label>Nom & Prénoms : </label> <span id="acteurSelec"> </span><br>
+                                        <label>Type Contrôleur : </label> <span id="acteurSelec4"> </span>
+                                            
+                                    </td>
+                                    <td>
+                                        <label>Contact : </label> <span id="acteurSelec2"> </span><br>
+                                        <label>Email : </label> <span id="acteurSelec3"> </span>
+                                            
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <div class="shadow-lg p-3 mb-5 bg-white rounded ">
+                                <form method="POST" action="{{path ('addfichepdv')}}">
+                                    <div class="form-row justify-content-center">
+                                        <div class="form-group col-md-3">
+                                            <label>Partenaires <span style="color: red">*</span></label>
+                                            <select class="custom-select " id="partenaire" name="partenaire" {% if saisie is defined %} value="{{ saisie['partenaire']}}" {% endif %}>
+                                                <option value="">Choisir un partenaire</option>
+                                                {% for colonne in partenaire %}
+                                                    <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="form-group col-md-3 selectActeurPDV">
+                                            <label>Type Contôleur <span style="color: red">*</span></label>
+                                            <select class="custom-select" id="typeActeurPartContro" required>
+                                                <option value="">Sélectionner un type</option>
+                                                {% for colonne in typeacteur %}
+                                                    <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="form-group col-md-3 selectPDV" style="display:none">
+                                            <label>Région <span style="color: red">*</span></label>
+                                            <select class="custom-select listeVille" onChange="listeVilles()" id="region" name="region" {% if saisie is defined %} value="{{ saisie['region']}}" {% endif %}>
+                                                <option value="">Choisir une région</option>
+                                                {% for colonne in region %}
+                                                    <option value="{{ path ('villes',{'id':colonne['id']}) }}">{{ colonne['libelle']|upper }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="form-group col-md-3 selectPDV" style="display:none">
+                                            <label>Ville <span style="color: red">*</span></label>
+                                            <select class="custom-select " id="donnees" name="ville">
+                                                <option value="">Choisir une ville</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group col-md-3 selectPDV" style="display:none">
+                                            <label>Type PDV <span style="color: red">*</span></label>
+                                            <select class="custom-select" id="typepdva" name="typepdv" {% if saisie is defined %} value="{{ saisie['typepdv']}}" {% endif %}>
+                                                <option value="">Choisir un type</option>
+                                                {% for colonne in typepdv %}
+                                                    <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-row justify-content-center">
+                                        <div class="form-group col-md-3 selectActeurPDV">
+                                            <button type="button" id="btpartActPdv" style="margin-right: 10px" class="btn btn-primary" disabled>Selectionner les PDV du contrôleur</button>
+                                        </div>
+                                        <div class="form-group col-md-2 selectPDV" style="display:none">
+                                            <button type="submit" id="btpdvtAct" class="btn btn-primary mb-2" disabled>Enregistrer</button>
+                                        </div>
+                                        <div class="form-group col-md-3">
+                                            <a class="btn btn-success" href="{{path ('addfichepdv')}}" role="button">Annuler la recherche</a>
+                                        </div>
+                                    </div>
+                                    
+                                    <textarea style="display:none;" name="listepdvId" id="listepdvId"></textarea>
+                                    <input type="hidden" id="acteurId" name="listeActeurs">
+                                    {# <input type="text" id="listepdvId" name="listepdvId">
+                                    <textarea style="display:block;" name="listeActeurs" id="acteurId"></textarea> #}
+                                </form>
+                            </div>
+
+                            <div class="selectPDV" style="display:none">
+                                <table id="PdvControleurtable" class="table text-center table-hover display">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center"><input type="checkbox" class="selectAll"></th>
+                                            <th class="text-center">Type de PDV</th>
+                                            <th class="text-center">Profile</th>
+                                            <th class="text-center">Nom Commercial</th>
+                                            <th class="text-center">Partenaire</th>
+                                            <th class="text-center">Type Contrôleur</th>
+                                            <th class="text-center">Ville</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan = 7>Aucune données</td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div class="selectActeurPDV">
+                                <table id="PartPdvControleurtable" class="table text-center table-hover display selectActeurPDV">
+                                    <thead>
+                                    <tr>
+                                        <th class="text-center"></th>
+                                        <th class="text-center">Nom & Prénoms</th>
+                                        <th class="text-center">Contact</th>
+                                        <th class="text-center">Email</th>
+                                        <th class="text-center">Responsable Hierarchique</th>
+                                        <th class="text-center">Type Contrôleur</th>
+                                    </tr>
+                                    </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan = 6>Aucune données</td>
+                                    </tr>
+                                </tbody>
+                                    <tfoot>
+                                    </tfoot>
+                                </table>
+                            </div>
+                    {% endif %}
+                </div>
+                <!-- importer des pdvs  -->
+                <div class="tab-pane fade {% if tab == "importer" %}show active{% endif %}" id="importer" role="tabpanel" aria-labelledby="importer-tab">
+                    {% if tab == "importer" %}
+                        <form  action="{{path ('importpdv')}}" method="POST" enctype="multipart/form-data">
+
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a style="width: 300px" href="{{ asset('assets/files/pdv.xlsx') }}" target="_blank" class="btn btn-primary mb-2">Cliquer pour télécharger un model de fichier d'importation</a>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center" style="margin-bottom: 2%">
+                                <span class="status-actif" style="font-size: larger;text-align: center" >Importer le fichier en vous basant sur l'image au format CSV ( Séparateur: point-virgule ) <br> la colonne ID reste vide</span>
+                            </div>
+                            <div class="form-row justify-content-center" style="margin-right: 20%;">
+                                <label class="col-2 text-right">Type d'pdv <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <select class="custom-select" name="typepdv"  required>
+                                        <option value="">Sélectionner un type de pdv</option>
+                                        {% for colonne in typepdv %}
+                                            {% if colonne['actived'] %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center" style="margin-right: 20%;">
+                                <label class="col-2 text-right">Partenaires <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <select class="custom-select" name="partenaire" required>
+                                        <option value="">Choisir un partenaire</option>
+                                        {% for colonne in partenaire %}
+                                            {% if colonne['actived'] %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center" style="margin-right: 20%;">
+                                <label class="col-2 text-right">Région <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <select class="custom-select listeVille" onChange="listeVilles()" name="region" required>
+                                        <option value="">Choisir une region</option>
+                                        {% for colonne in region %}
+                                            <option value="{{ path ('villes',{'id':colonne['id']}) }}">{{ colonne['libelle']|upper }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center" style="margin-right: 20%;">
+                                <label class="col-2 text-right">Ville <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <select class="custom-select" id="donnees" name="ville" required>
+                                        <option value="">Choisir une ville</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <label class="col-2 text-right">Type contrôleur <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <select class="typeacteur" name="typeacteur[]" multiple="multiple">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center" >
+                                <label class="col-2 text-right">Fichier <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <input type="file" name="listepdvs" class="custom-file" accept=".csv" required>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('pdv') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>
+                                </div>
+                                <div class="form-group col-md-2">
+                                    <button type="submit" class="btn btn-primary mb-2">Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+                <!-- modifier un type de pdv  -->
+                <div class="tab-pane fade {% if tab == "modifier" %}show active{% endif %}" id="modifier" role="tabpanel" aria-labelledby="modifier-tab">
+                    {% if dataSelect is defined  %}
+                        <form action="{{path ('editpdv',{'id':dataSelect['id']})}}" method="POST" enctype="multipart/form-data">
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type pdv <span style="color: red">*</span></label>
+                                <div class="form-group col-md-3">
+                                    <select class="custom-select" name="typepdv" required>
+                                        <option value="">Choisir un type</option>
+                                        {% for colonne in typepdv %}
+                                            {% if colonne['actived'] %}
+                                                <option {% if dataSelect['type_pdv']['id']== colonne['id'] %} selected {% endif %} value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Profile<span style="color: red">*</span></label>
+                                <div class="form-group col-md-3">
+                                    <input type="text" name="profilePdv" class="form-control majuscule" value="{{dataSelect['profilePdv']}}" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Partenaires <span style="color: red">*</span></label>
+                                <div class="form-group col-md-3">
+                                    <select class="custom-select" name="partenaire" required>
+                                        <option value="">Choisir un partenaire</option>
+                                        {% for colonne in partenaire %}
+                                            {% if colonne['actived'] %}
+                                                <option{% if dataSelect['partenaire']['id']== colonne['id'] %} selected {% endif %} value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Région <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <select class="custom-select listeVille" onChange="listeVilles()" name="region" required>
+                                        <option value="">Choisir une région</option>
+                                        {% for colonne in region %}
+                                            <option {% if dataSelect['ville'] is not null and dataSelect['ville']['region'] is defined %} {% if dataSelect['ville']['region']['id']== colonne['id'] %} selected {% endif %}{% endif %} value="{{ path ('villes',{'id':colonne['id']}) }}">{{ colonne['libelle']|upper }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if(dataSelect['ville']['region']['id'] is defined) %}
+                                        <script>
+                                            //dhes que la page est charger attendre 300 milli seconde et filtrer les responselba hierachique
+                                            active_region_id = '{{ dataSelect['ville']['id'] }}';
+                                            $(document).ready(function () {
+                                                setTimeout(function () {
+
+                                                    if (active_region_id != '') {
+                                                        listeVilles(active_region_id);
+                                                    }
+
+                                                    if (active_region_id == '') {
+                                                        listeVilles();
+                                                    }
+
+                                                }, 300);
+                                            });
+                                        </script>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Ville <span style="color: red">*</span></label>
+                                <div class="form-group col-md-3">
+                                    <select class="custom-select" id="donnees" name="ville">
+                                        <option value="">Choisir une ville</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type contrôleur <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <select id="type_acteur" name="typeacteur[]" multiple="multiple">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Entité Contrôlé <span style="color: red">*</span></label>
+                                <div class="form-group col-md-3">
+                                    <input type="text" name="entite_controle" value="{{dataSelect['entiteControle']}}" class="form-control majuscule" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Nom Commercial <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <input type="text" name="nom_commercial" value="{{dataSelect['nom_commercial']}}" class="form-control majuscule" placeholder="Nom Commercial" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Numéro tête de pont <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <input type="number" name="numero_tete_pont" value="{{dataSelect['numero_tete_pont']}}" class="form-control majuscule" placeholder="Tête de pont" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Numéro revendeur <span style="color: red">*</span></label>
+                                <div class="form-group col-md-2">
+                                    <input type="number" name="numero_revendeur" value="{{dataSelect['numeroRevendeur']}}"class="form-control majuscule" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Numéro PDV <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <input type="number" name="numero_pdv" value="{{dataSelect['numero_pdv']}}" class="form-control majuscule" placeholder="Numéro PDV" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Nom du responsable </label>
+                                <div class="form-group col-md-3">
+                                    <input type="text" name="nom_responsable" value="{{dataSelect['nom_responsable']}}" class="form-control majuscule" >
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Contact du responsable</label>
+                                <div class="form-group col-md-2">
+                                    <input type="number" name="contact_responsable" value="{{dataSelect['contact_responsable']}}" class="form-control majuscule" >
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Localisation <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <input type="text" name="localisation" value="{{dataSelect['initialAdresse']}}" class="form-control majuscule" >
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('pdv') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>  
+                                </div> 
+                                <div class="form-group col-md-2">
+                                    <button type="submit"  class="btn btn-primary">Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>              
+                    {% endif %}  
+                </div>
+            </div>      
+        </div> 
+    </div> 
+{% endblock %}

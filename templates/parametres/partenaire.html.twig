@@ -1,0 +1,271 @@
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+    <nav role="navigation" aria-labelledby="breadcrumb-intro-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="">Gestion des paramétres</a></li>
+            <li class="breadcrumb-item"><a href="{{path ('partenaire')}}">Partenaires</a></li>
+            <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{tab}}</li>
+        </ol>
+    </nav>
+     <div class="p-3 mb-2 bg-primary page-current">PARTENAIRES</div>
+    <div class="main-content container-fluid">
+        <div class="page-title">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('partenaire')}}">Liste des partenaires</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'ajouter' ) %} active{% endif %}" href="{{path ('addpartenaire')}}">Ajouter un partenaire</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'importer' ) %} active{% endif %}" href="{{path ('importpartenaire')}}">Importer des partenaires</a>
+                </li>
+                {% if dataSelect is defined  %}
+                <li class="nav-item" role="presentation" style="display:{% if tab == "modifier" %}block {% else %}none{% endif %}">
+                    <a class="nav-link {% if tab is same as( 'modifier' ) %} active{% endif %}" href="{{path ('editpartenaire',{'id':dataSelect['id']})}}">Modifier un partenaire</a>
+                </li>
+                {% endif %}
+                {% if dataActeur is defined  %}
+                <li class="nav-item" role="presentation" style="display:{% if tab == "controleur" %}block {% else %}none{% endif %}">
+                    <a class="nav-link {% if tab is same as( 'controleur' ) %} active{% endif %}" href="{{path ('addActeurPartenaire',{'id':id,'partenaire':partenaire})}}">Ajout des contrôleurs au partenaire</a>
+                </li>
+                {% endif %}
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <!-- Liste des partenaires  -->
+                <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                    {% if databd is defined  %}
+                        <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                            <form method="POST" action="{{path ('recherchepartenaire')}}">
+                                <div class="form-row">
+                                    <div class="form-group col-md-3">
+                                        <label>Libelle </label>
+                                        <input type="text" name="libelle" {% if saisie is defined %} value="{{ saisie['libelle']}}" {% endif %} class="form-control majuscule">
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>Statut</label>
+                                        <select class="custom-select" name="status" {% if saisie is defined %} value="{{ saisie['status']}}" {% endif %}>
+                                            <option value="">Sélectionner un statut</option>
+                                            {% for colonne in statut %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-2" style="padding-top: 37px;">
+                                        <button type="submit"  class="btn btn-primary">Rechercher</button>
+                                    </div>
+                                    <div class="form-group col-md-2" style="padding-top: 37px;">
+                                        <a class="btn btn-success" href="{{path ('partenaire')}}" role="button">Annuler la recherche</a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <table id="table" class="table table-hover display">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Libelle</th>
+                                    <th class="text-center">Description</th>
+                                    <th class="text-center">Statut</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in databd|batch(1, 'No item') %}
+                                    <tr>
+                                        {% for data in row %}
+                                            <td class="text-center">{{ data['libelle']|upper }}</td>
+                                            <td class="text-center">{{ data['description']|upper }}</td>
+                                            <td class="text-center td-status">
+                                                {% if data['actived'] %}
+                                                    <span class="status-actif">ACTIF</span>
+                                                {% else %}
+                                                    <span class="status-inactif">INACTIF</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="dropdown">
+                                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        Action
+                                                    </button>
+                                                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                                        <a class="dropdown-item" href="{{ path ('editpartenaire',{'id':data['id']}) }}">Modifier</a>
+                                                        <a class="dropdown-item" href="{{ path ('addActeurPartenaire',{'id':data['id'],'partenaire':data['libelle']|upper}) }}">Définir les contrôleurs</a>
+                                                        {% if data['actived'] %}
+                                                            <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('desactiverpartenaire',{'id':data['id']}) }},Désactivation,désactiver,ce partenaire : {{ data['libelle']|upper }}">Désactiver</button>
+                                                        {% else %}
+                                                            <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('activerpartenaire',{'id':data['id']}) }},Activation,activer,ce partenaire : {{ data['libelle']|upper }}">Activer</button>
+                                                        {% endif %}
+                                                        <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('delpartenaire',{'id':data['id']}) }},Suppression,supprimer,ce partenaire : {{ data['libelle']|upper }}">Supprimer</button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+                    {% endif %}
+                </div>
+                <!-- ajouter un partenaire  -->
+                <div class="tab-pane fade {% if tab == "ajouter" %}show active{% endif %}" id="ajouter" role="tabpanel" aria-labelledby="ajouter-tab">
+                    <form method="POST" action="{{path ('addpartenaire')}}">
+                        <div class="form-row">
+                            <label class="col-2 text-right">Libelle  <span style="color: red">*</span></label>
+                            <div class="form-group col-md-6">
+                                <input type="text" name="libelle" class="form-control majuscule" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Description </label>
+                            <div class="form-group col-md-6">
+                                <textarea class="form-control majuscule" name="description" rows="5" cols="50"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-row justify-content-center">
+                            <div class="form-group col-md-2">
+                                <a href="{{ path ('partenaire') }}" class="btn btn-secondary">
+                                    Annuler
+                                </a>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <button type="submit"  class="btn btn-primary mb-2">Enregistrer</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <!-- importer des partenaires  -->
+                <div class="tab-pane fade {% if tab == "importer" %}show active{% endif %}" id="importer" role="tabpanel" aria-labelledby="importer-tab">
+                    <form  action="{{path ('importpartenaire')}}" method="POST" enctype="multipart/form-data">
+
+                        <div class="form-row justify-content-center">
+
+                            <div class="form-group col-md-2">
+                                <a style="width: 300px" href="{{ asset('assets/files/partenaire.xlsx') }}" target="_blank" class="btn btn-primary mb-2">Cliquer pour télécharger un model de fichier d'importation</a>
+                            </div>
+                        </div>
+                        <div class="form-row justify-content-center" style="margin-bottom: 2%">
+                            <span class="status-actif" style="font-size: larger;text-align: center" >Importer le fichier en vous basant sur l'image au format CSV ( Séparateur: point-virgule ) <br> la colonne ID reste vide</span>
+                        </div>
+                        <div class="form-row justify-content-center">
+                            <label class="col-2 text-right">Fichier <span style="color: red">*</span></label>
+                            <div class="form-group col-md-6">
+                                <input type="file" name="listepartenaire" class="custom-file" accept=".csv" required>
+                            </div>
+                        </div>
+                        <div class="form-row justify-content-center">
+                            <div class="form-group col-md-2">
+                                <a href="{{ path ('partenaire') }}" class="btn btn-secondary">
+                                    Annuler
+                                </a>
+                            </div>
+                            <div class="form-group col-md-2">
+                                <button type="submit" class="btn btn-primary mb-2">Enregistrer</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <!-- modifier un partenaire  -->
+                <div class="tab-pane fade {% if tab == "modifier" %}show active{% endif %}" id="modifier" role="tabpanel" aria-labelledby="modifier-tab">
+                    {% if dataSelect is defined  %}
+                        <form action="{{path ('editpartenaire',{'id':dataSelect['id']})}}" method="POST" enctype="multipart/form-data">
+                            <div class="form-row">
+                                <label class="col-2 text-right">Libelle  <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <input type="text" name="libelle" value="{{ dataSelect['libelle'] }}"  class="form-control majuscule" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Description</label>
+                                <div class="form-group col-md-6">
+                                    <textarea class="form-control majuscule" name="description" rows="5" cols="50">{{ dataSelect['description'] }}</textarea>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('partenaire') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <button type="submit"  class="btn btn-primary mb-2">Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+
+                <!-- ajouter controleurs à un partenaire  -->
+                <div class="tab-pane fade {% if tab == "controleur" %}show active{% endif %}" id="controleur" role="tabpanel" aria-labelledby="controleur-tab">
+                    {% if dataActeur is defined  %}
+                        <div class="shadow-lg p-3 mb-5 bg-white rounded ">
+
+                        <form action="{{path ('addActeurPartenaire',{'id':id,'partenaire':partenaire})}}" method="POST" enctype="multipart/form-data">
+                            <div class="form-row">
+                                <label class="col-3 text-right">Partenaire </label>
+                                <div class="form-group col-md-4">
+                                    <input type="text" value="{{ partenaire }}"  class="form-control majuscule" disabled>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-3 text-right">Type Contôleur <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <select class="custom-select" id="typeActeurPart" required>
+                                        <option value="">Sélectionner un type</option>
+                                        {% for colonne in typeacteur %}
+                                            <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <input type="hidden" value="{{ id }}"  id="partenaire" disabled>
+                                <textarea style="display:none;" name="listeActeurs" id="acteurs"></textarea>
+                            </div>
+
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('partenaire') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <button type="submit" id="btpartAct" class="btn btn-primary mb-2" disabled>Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>
+                        </div>
+                        <div style="float: right ; margin-bottom: 10px">
+                            <div id="table_filter" class="dataTables_filter">
+                                <label style="display: inline-block;margin-bottom: -114.625rem;font-weight: 70;">Rechercher:<input id="myInput" onkeyup="myFunction()"  style="border: 1px solid #aaa;border-radius: 3px; padding: 5px;background-color: transparent;margin-left: 3px;" type="text" class="" placeholder="" aria-controls="table"></label>
+                            </div>
+                        </div>
+                        <br>
+
+                        <table id="PartenaireControleurtable" class="table text-center table-hover display myTable">
+                            <thead>
+                            <tr>
+                                <th class="text-center"><input type="checkbox" class="selectAll2"></th>
+                                <th class="text-center">Nom & Prénoms</th>
+                                <th class="text-center">Contact</th>
+                                <th class="text-center">Email</th>
+                                <th class="text-center">Responsable Hierarchique</th>
+                                <th class="text-center">Type Contrôleur</th>
+                            </tr>
+                            </thead>
+                           <tbody>
+                            <tr>
+                                <td colspan = 6>Aucune données</td>
+                            </tr>
+                           </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

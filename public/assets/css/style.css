@@ -1,0 +1,55 @@
+/* mon code */
+
+#myTabContent{
+    padding-top: 50px;
+}
+
+.td-status{
+    font-weight: bold;
+    line-height: 50px !important;
+}
+.status-attente{
+    padding: 3px 9px;
+    background-color: #f69604;
+}
+
+.status-inactif{
+    padding: 3px 9px;
+    background-color:#e03d3d;
+}
+
+.status-actif{
+    padding: 3px 9px;
+    background-color:#70d670;
+}
+
+.page-current{
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+.select-option{
+    background-color: #4bb4e6;
+}
+.deselect-option{
+    background-color:#fff!important;
+}
+li a.active,.breadcrumb-active{
+    color:#f16e00;
+}
+.flash-message {
+    /* width: 284px; */
+    text-align: center;
+    float: right;
+    margin-top: 17px;
+    margin-left: auto;
+    margin-right: 25px;
+}
+.fixed-right {
+    /* position: fixed; */
+    right: 0;
+    left: 0;
+    z-index: 1030;
+}
+.col-4{
+    padding: 0.625rem;
+}

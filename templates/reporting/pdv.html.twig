@@ -1,0 +1,241 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+
+    {% if filtre is defined %}
+        <style>
+            .dataTables_scrollHeadInner , .dataTable {width:100% !important;}
+        </style>
+        <script>
+            //appliquer la librairie dataTable sur le tableau de la page actuelle ainsi que les different bouton de telechargement
+            bouton= [
+                {
+                    extend: 'copy',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'csv',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'excel',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'pdf',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'print',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                'colvis'
+            ];
+
+            function getTypeActeurs(data){
+                if(data != undefined){
+                    if(data.length > 0){
+                        var rl = [];
+                        for(var i = 0; i<data.length;i++){
+                            rl.push('{'+data[i].libelle.toUpperCase()+'}');
+                        }
+                        return rl.join(' ');
+                    }
+                    return '';
+                }
+                return '';
+            }
+
+            $(document).ready(function () {
+                $('#Reportpdvtable').dataTable({
+                    "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                    "iDisplayLength": 50,
+                    'bProcessing': true, 'bServerSide': true,
+                    'sAjaxSource': '{{ path('getReportingPdv') }}',
+                    "url": "data.json",
+                    "dataSrc": "tableData",
+                    dom: 'Bfrtip',
+                    "scrollX": true,
+                    buttons:bouton,
+                    'fnServerData': function (source, data, callback) {
+                        $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                var rows = [];
+                                for(var i = 0; i<data.aaData.length ; i++){
+                                    const o = data.aaData[i];
+                                    const obj = {
+                                        type_pdv:(o.type_pdv !== undefined && o.type_pdv !== null)?o.type_pdv.libelle.toUpperCase():'',
+                                        profilePdv:(o.profilePdv !== undefined && o.profilePdv !== null)?o.profilePdv.toUpperCase():'',
+                                        nom_responsable: (o.nom_responsable !== undefined && o.nom_responsable !== null)?o.nom_responsable.toUpperCase():'',
+                                        nom_commercial: (o.nom_commercial !== undefined && o.nom_commercial !== null)?o.nom_commercial.toUpperCase():'',
+                                        numero_tete_pont: (o.numero_tete_pont !== undefined && o.numero_tete_pont !== null)?o.numero_tete_pont:'',
+                                        numero_pdv: (o.numero_pdv !== undefined && o.numero_pdv !== null)?o.numero_pdv:'',
+                                        partenaire: (o.partenaire !== undefined && o.partenaire !== null)?o.partenaire.libelle.toUpperCase():'',
+                                        type_acteur:getTypeActeurs(o.type_acteur),
+                                        ville: (o.ville !== undefined && o.ville !== null)?o.ville.libelle.toUpperCase():'',
+                                        initialAdresse: (o.initialAdresse !== undefined && o.initialAdresse !== null)?o.initialAdresse.toUpperCase():'',
+                                        addresse: (o.addresse !== undefined && o.addresse !== null)?o.addresse.toUpperCase():'',
+                                    }
+                                    rows.push(obj);
+                                }
+                                data.aaData = rows;
+                                callback(data);
+                            }})
+                    },
+
+                    "columns": [
+                        { "data": function(d){return d.type_pdv} },
+                        { "data": function(d){return d.profilePdv} },
+                        { "data": function(d){return d.nom_responsable} },
+                        { "data": function(d){return d.nom_commercial} },
+                        { "data": function(d){return d.numero_tete_pont} },
+                        { "data": function(d){return d.numero_pdv} },
+                        { "data": function(d){return d.partenaire} },
+                        { "data": function(d){return d.type_acteur} },
+                        { "data": function(d){return d.ville} },
+                        { "data": function(d){return d.initialAdresse} },
+                        { "data": function(d){return d.addresse} },
+                    ]
+                });
+            });
+
+            $(document).on('click','#submit_form',{passive:true},function () {
+                if ( $.fn.dataTable.isDataTable('#Reportpdvtable') ) {
+                    $('#Reportpdvtable').DataTable().destroy();
+                }
+
+                var route = $('#maroute').val();
+                var url = '{{ path("getSearchReportingPdv", {'id': 'article_id'}) }}';
+
+                url = url.replace("article_id", route);
+
+                $('#Reportpdvtable').dataTable({
+                    "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                    "iDisplayLength": 50,
+                    'bProcessing': true, 'bServerSide': true,
+                    'sAjaxSource': url,
+                    "url": "data.json",
+                    "dataSrc": "tableData",
+                    dom: 'Bfrtip',
+                    "scrollX": true,
+                    buttons:bouton,
+                    'fnServerData': function (source, data, callback) {
+                        $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                var rows = [];
+                                for(var i = 0; i<data.aaData.length ; i++){
+                                    const o = data.aaData[i];
+                                    const obj = {
+                                        type_pdv:(o.type_pdv !== undefined && o.type_pdv !== null)?o.type_pdv.libelle.toUpperCase():'',
+                                        profilePdv:(o.profilePdv !== undefined && o.profilePdv !== null)?o.profilePdv.toUpperCase():'',
+                                        nom_responsable: (o.nom_responsable !== undefined && o.nom_responsable !== null)?o.nom_responsable.toUpperCase():'',
+                                        nom_commercial: (o.nom_commercial !== undefined && o.nom_commercial !== null)?o.nom_commercial.toUpperCase():'',
+                                        numero_tete_pont: (o.numero_tete_pont !== undefined && o.numero_tete_pont !== null)?o.numero_tete_pont:'',
+                                        numero_pdv: (o.numero_pdv !== undefined && o.numero_pdv !== null)?o.numero_pdv:'',
+                                        partenaire: (o.partenaire !== undefined && o.partenaire !== null)?o.partenaire.libelle.toUpperCase():'',
+                                        type_acteur:getTypeActeurs(o.type_acteur),
+                                        ville: (o.ville !== undefined && o.ville !== null)?o.ville.libelle.toUpperCase():'',
+                                        initialAdresse: (o.initialAdresse !== undefined && o.initialAdresse !== null)?o.initialAdresse.toUpperCase():'',
+                                        addresse: (o.addresse !== undefined && o.addresse !== null)?o.addresse.toUpperCase():'',
+                                    }
+                                    rows.push(obj);
+                                }
+                                data.aaData = rows;
+                                callback(data);
+                            }})
+                    },
+
+                    "columns": [
+                        { "data": function(d){return d.type_pdv} },
+                        { "data": function(d){return d.profilePdv} },
+                        { "data": function(d){return d.nom_responsable} },
+                        { "data": function(d){return d.nom_commercial} },
+                        { "data": function(d){return d.numero_tete_pont} },
+                        { "data": function(d){return d.numero_pdv} },
+                        { "data": function(d){return d.partenaire} },
+                        { "data": function(d){return d.type_acteur} },
+                        { "data": function(d){return d.ville} },
+                        { "data": function(d){return d.initialAdresse} },
+                        { "data": function(d){return d.addresse} },
+                    ]
+                });
+
+            });
+
+        </script>
+    {% endif %}
+
+    <nav role="navigation" aria-labelledby="breadcrumb-intro-3" xmlns="http://www.w3.org/1999/html">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="">Reporting</a></li>
+            <li class="breadcrumb-item"><a href="{{path ('historiques')}}">PDV</a></li>
+            <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{onglet}}</li>
+        </ol>
+    </nav>
+    <div class="p-3 mb-2 bg-primary page-current">PDV REPORTING</div>
+    <div class="main-content container-fluid">
+        <div class="page-title">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('pdv_reporting')}}">Liste des PDV</a>
+                </li>
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <!-- Liste des PDV  -->
+                <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                    {% if databd is defined %}
+                        <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                            <form method="POST" action="">
+                                <div class="form-row">
+                                    <div class="form-group col-md-4">
+                                        <label>Status PDV</label>
+                                        <select class="custom-select" id="maroute" name="maroute" {% if saisie is defined %} value="{{ saisie['maroute']}}" {% endif %}>
+                                            <option value="">Choisir un statut</option>
+                                            <option value="pdvnoncontrolles">PDV Non Contrôlés</option>
+                                            <option value="pdvcontrolles">PDV Contrôlés</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-2" style="padding-top: 37px;">
+                                        <button type="button" id="submit_form"  class="btn btn-primary">Rechercher</button>
+                                    </div>
+                                    <div class="form-group col-md-2" style="padding-top: 37px;">
+                                        <a class="btn btn-success" href="{{path ('pdv_reporting')}}" role="button">Annuler la recherche</a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <table id="Reportpdvtable" class="table text-center table-hover display">
+                            <thead>
+                            <tr>
+                                <th class="text-center">Type de PDV</th>
+                                <th class="text-center">Profile</th>
+                                <th class="text-center">Nom Responsable</th>
+                                <th class="text-center">Nom Commercial</th>
+                                <th class="text-center">Numéro TP</th>
+                                <th class="text-center">Numéro PDV</th>
+                                <th class="text-center">Partenaire</th>
+                                <th class="text-center">type controleur</th>
+                                <th class="text-center">Ville</th>
+                                <th class="text-center">Adresse 1</th>
+                                <th class="text-center">Adresse 2</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                            <tfoot>
+                            </tfoot>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

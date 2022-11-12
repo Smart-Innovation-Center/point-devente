@@ -1,0 +1,160 @@
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+    <nav role="navigation" aria-labelledby="breadcrumb-intro-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="">Gestion des Formulaires</a></li>
+            <li class="breadcrumb-item"><a href="{{path ('parametreformulaire')}}">Paramétres</a></li>
+            <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{tab}}</li>
+        </ol>
+    </nav>
+     <div class="p-3 mb-2 bg-primary page-current">PARAMETRES DU FORMULAIRE</div>
+    <div class="main-content container-fluid">
+        <div class="page-title">             
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('parametreformulaire')}}">Liste des paramétres</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'ajouter' ) %} active{% endif %}" href="{{path ('addparametreformulaire')}}">Creer un paramétre</a>
+                </li>
+                {% if dataSelect is defined  %}
+                <li class="nav-item" role="presentation" style="display:{% if tab == "modifier" %}block {% else %}none{% endif %}">
+                    <a class="nav-link {% if tab is same as( 'modifier' ) %} active{% endif %}" href="{{path ('editparametreformulaire',{'id':dataSelect['id']})}}">Modifier un paramétre</a>
+                </li>
+                {% endif %}  
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <!-- Liste des parametres du formulaire  -->
+                <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                    {% if databd is defined  %}
+                        <table id="table" class="table table-hover display">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Question</th>
+                                    <th class="text-center">Type du champ</th>
+                                    <th class="text-center">Liste des options</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in databd|batch(1, 'No item') %}
+                                    <tr>
+                                        {% for data in row %}
+                                            <td class="text-center">{{ data['questionnaire']['libelle'] }}</td>
+                                            <td class="text-center">
+                                                {% for colonne in typechamp %}
+                                                    {% if data['questionnaire']['type']== colonne['id'] %}
+                                                        {{ colonne['libelle'] }}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </td>
+                                            <td class="text-center">{{ data['questionnaire']['listeoption'] }}</td>
+                                            <td class="text-center">
+                                                <div class="dropdown">
+                                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        Action
+                                                    </button>
+                                                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                                        <a class="dropdown-item" href="{{ path ('editparametreformulaire',{'id':data['id']}) }}">Modifier</a>
+
+                                                        <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('delparametreformulaire',{'id':data['id']}) }},Suppression,supprimer,ce paramétre : {{ data['questionnaire']['libelle'] }}">Supprimer</button>
+                                                    </div>
+                                                </div>  
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %} 
+                            </tbody>              
+                            <tfoot>
+                            </tfoot> 
+                        </table>
+                    {% endif %}
+                </div>
+                <!-- ajouter un parametres du formulaire  -->
+                <div class="tab-pane fade {% if tab == "ajouter" %}show active{% endif %}" id="ajouter" role="tabpanel" aria-labelledby="ajouter-tab">
+                    {% if tab == "ajouter"  %}
+                        <form method="POST" action="{{path ('addparametreformulaire')}}">
+                            <div class="form-row">
+                                <label class="col-2 text-right">Libelle <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <input type="text" name="libelle" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type de Champ <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <select class="custom-select typequestion" name="type_champ" onchange="change_valeur();" required>
+                                        <option>Sélectionner un type</option>
+                                        {% for colonne in typechamp %}
+                                            <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right"></label>
+                                <div class="form-group col-md-4" id="plusoption" style="display:none">
+                                    <textarea class="form-control selectoption" name="listeoption" placeholder="Renseigner les differentes options ici, séparées de point virgules(;)"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('parametreformulaire') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>
+                                </div>
+                                <div class="form-group col-md-2">
+                                    <button type="submit"  class="btn btn-primary">Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+                <!-- modifier un parametres du formulaire  -->
+                <div class="tab-pane fade {% if tab == "modifier" %}show active{% endif %}" id="modifier" role="tabpanel" aria-labelledby="modifier-tab">
+                    {% if dataSelect is defined  %}                    
+                        <form action="{{path ('editparametreformulaire',{'id':dataSelect['id']})}}" method="POST" enctype="multipart/form-data">
+
+                            <div class="form-row">
+                                <label class="col-2 text-right">Libelle <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <input type="text" name="libelle" value="{{dataSelect['questionnaire']['libelle']}}" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type de Champ <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <select class="custom-select typequestion" name="type_champ" onchange="change_valeur();" required>
+                                        <option>Sélectionner un type</option>
+                                        {% for colonne in typechamp %}
+                                            <option {% if dataSelect['questionnaire']['type']== colonne['id'] %} selected {% endif %} value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right"></label>
+                                <div class="form-group col-md-4" id="plusoption" style="display:{% if dataSelect['questionnaire']['listeoption'] != null %} block {% else %} none {% endif %}">
+                                    <textarea class="form-control selectoption" name="listeoption" placeholder="Renseigner les differentes options ici, séparées de point virgules(;)">{{ dataSelect['questionnaire']['listeoption'] }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('parametreformulaire') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>  
+                                </div> 
+                                <div class="form-group col-md-2">
+                                    <button type="submit"  class="btn btn-primary">Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>              
+                    {% endif %}  
+                </div>
+            </div>      
+        </div> 
+    </div> 
+{% endblock %}

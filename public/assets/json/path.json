@@ -1,0 +1,53 @@
+{
+      "status":
+      [
+                {
+                "id": true,
+                "libelle": "Actif"
+                },
+                {
+                "id": 0,
+                "libelle": "Inactif"
+                }
+      ],
+      "typechamp":
+      [
+                {
+                "id": "text",
+                "libelle": "Text"
+                },
+                {
+                "id": "radio",
+                "libelle": "Choix unique"
+                },
+                {
+                "id": "checkbox",
+                "libelle": "Choix multiple"
+                },
+                {
+                "id": "email",
+                "libelle": "Email"
+                },
+                {
+                "id": "date",
+                "libelle": "Date"
+                },
+                {
+                "id": "number",
+                "libelle": "Nombre"
+                },
+                {
+                "id": "textarea",
+                "libelle": "Commentaire"
+                },
+                {
+                "id": "tel",
+                "libelle": "Numéro de téléphone"
+                },
+                {
+                "id": "select",
+                "libelle": "liste déroulante"
+                }
+      ]
+
+}

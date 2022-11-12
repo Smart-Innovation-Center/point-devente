@@ -1,0 +1,1756 @@
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+
+     {% if filtre is defined %}
+         <script>
+             //appliquer la librairie dataTable sur le tableau de la page actuelle ainsi que les different bouton de telechargement
+            
+             {% if app.session.get('manager') is null %}
+                bouton= [
+                 {
+                     extend: 'copy',
+                     exportOptions: {
+                         columns: ':visible'
+                     }
+                 },
+                 {
+                     extend: 'csv',
+                     exportOptions: {
+                         columns: ':visible'
+                     }
+                 },
+                 {
+                     extend: 'excel',
+                     exportOptions: {
+                         columns: ':visible'
+                     }
+                 },
+                 {
+                     extend: 'pdf',
+                     exportOptions: {
+                         columns: ':visible'
+                     }
+                 },
+                 {
+                     extend: 'print',
+                     exportOptions: {
+                         columns: ':visible'
+                     }
+                 },
+                 'colvis'
+             ];
+             {% else %}
+                bouton=[];
+             {% endif %}
+             
+             function render_action(id,typeVisite){
+
+                 var url = '{{ path("detailfiche", {'id': 'article_id'}) }}';
+                 var url1 = '{{ path("fichesynthesecontrole", {'id': 'article_id'}) }}';
+                 var url2 = '{{ path("fichesyntheseevaluation", {'id': 'article_id'}) }}';
+
+                 url = url.replace("article_id", id);
+                 url1 = url1.replace("article_id", id);
+                 url2 = url2.replace("article_id", id);
+
+                 var detail1 = '{{ path("detailadministration", {'id': 'article_id'}) }}';
+                 var detail2 = '{{ path("detailsupervision", {'id': 'article_id'}) }}';
+                 var detail3 = '{{ path("detailevaluation", {'id': 'article_id'}) }}';
+
+                 detail1 = detail1.replace("article_id", id);
+                 detail2 = detail2.replace("article_id", id);
+                 detail3 = detail3.replace("article_id", id);
+
+                 var str = '"'+typeVisite+'"';
+
+                 // Vérifie si la sous-chaîne existe dans la chaîne de caractères
+                 if(str.includes("SUPERVISION")){
+                     action_btn1='<a class="btn btn-success" href="'+ detail2 +'"  role="button">Détail</a>'+
+                         '<a class="btn btn-warning" href="'+ url1 +'"  role="button">Fichier Synthèse</a>';
+                 }else if(str.includes("ADMINISTRATION")){
+                     action_btn1='<a class="btn btn-success" href="'+ detail1 +'"  role="button">Détail</a>'+
+                         '<a class="btn btn-warning" href="'+ url1 +'"  role="button">Fichier Synthèse</a>';
+                 }else if(str.includes("EVALUATION")){
+                     action_btn1='<a class="btn btn-success" href="'+ detail3 +'"  role="button">Détail</a>'+
+                         '<a class="btn btn-warning" href="'+ url2 +'"  role="button">Fichier Synthèse</a>';
+                 }else{
+                     action_btn1='<a class="btn btn-success" href="'+ url +'"  role="button">Détail</a>'+
+                         '<a class="btn btn-warning" href="'+ url1 +'"  role="button">Fichier Synthèse</a>';
+                 }
+                 return action_btn = action_btn1;
+             }
+
+             function formatDate(date) {
+                 var d = new Date(date);
+                 return d.toLocaleString();
+             }
+
+             function affiche_status(data){
+                 if(data !== undefined){
+                     if(data == false){
+                         return '<span class="status-attente">EN ATTENTE</span>';
+                     }
+                     if(data == true){
+                         return '<span class="status-actif">VALIDER</span>';
+                     }
+                     if(data == 2){
+                         return '<span class="status-inactif">INVALIDER</span>';
+                     }
+                 }
+                 return '';
+             }
+
+             function render_data(o){
+                 const objet = {
+                     status:affiche_status(o.status),
+                     date:(o.date !== undefined && o.date !== null)?formatDate(o.date):'',
+                     typeVisite: (o.typeVisite !== undefined && o.typeVisite !== null)?o.typeVisite.libelle.toUpperCase():'',
+                     acteur: (o.acteur !== undefined && o.acteur !== null)?o.acteur.nom_prenoms.toUpperCase():'',
+                     pdv_type_pdv: (o.pdv !== undefined && o.pdv !== null)?o.pdv.type_pdv.libelle.toUpperCase():'',
+                     pdv_nom_commercial: (o.pdv.nom_commercial !==undefined && o.pdv.nom_commercial !== null)?o.pdv.nom_commercial.toUpperCase(): '',
+                     pdv_numero_tete_pont: (o.pdv !== undefined && o.pdv !== null)?o.pdv.numero_tete_pont.toUpperCase():'',
+                     pdv_entiteControle: (o.pdv !== undefined && o.pdv !== null)?o.pdv.entiteControle.toUpperCase():'',
+                     pdv_nom_responsable: (o.pdv !== undefined && o.pdv !== null)?o.pdv.nom_responsable.toUpperCase():'',
+                     action: render_action(o.id,o.typeVisite.libelle)
+                 }
+                 
+                 return objet;
+             }
+
+             {% if tab == "lister" %}
+                $(document).ready(function () {
+                    $('#visiteControle').dataTable({
+                        "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                        "iDisplayLength": 50,
+                        'bProcessing': true, 'bServerSide': true,
+                        'sAjaxSource': '{{ path('getControlle') }}',
+                        "url": "data.json",
+                        "dataSrc": "tableData",
+                        dom: 'Bfrtip',
+                        "scrollX": true,
+                        buttons:bouton,
+                        'fnServerData': function (source, data, callback) {
+                            $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                    var rows = [];
+                                    for(var i = 0; i<data.aaData.length ; i++){
+                                        const o = data.aaData[i];
+                                        const obj = render_data(o);
+                                        rows.push(obj);
+                                    }
+                                    data.aaData = rows;
+                                    callback(data);
+                                }})
+                        },
+
+                        "columns": [
+                            { "data": function(d){return d.status} },
+                            { "data": function(d){return d.date} },
+                            { "data": function(d){return d.typeVisite} },
+                            { "data": function(d){return d.acteur} },
+                            { "data": function(d){return d.pdv_type_pdv} },
+                            { "data": function(d){return d.pdv_nom_commercial} },
+                            { "data": function(d){return d.pdv_numero_tete_pont} },
+                            { "data": function(d){return d.pdv_entiteControle} },
+                            { "data": function(d){return d.pdv_nom_responsable} },
+                            { "data": function(d){return d.action} },
+                        ]
+                    });
+                });
+
+                $(document).on('click','#submit_form',{passive:true},function () {
+                    if ( $.fn.dataTable.isDataTable('#visiteControle') ) {
+                        $('#visiteControle').DataTable().destroy();
+                    }
+
+                    var acteur = $('#acteur').val();
+                    var typevisite = $('#typevisite').val();
+                    var numPDV = $('#numPDV').val();
+                    var status = $('#status').val();
+                    var datedebut = $('#datedebut').val();
+                    var datefin = $('#datefin').val();
+                    
+                    var data = "";
+
+                    if( typevisite.replace(/\s+/, '').length ) {
+                        data=data+'&typeVisite='+typevisite;
+                    }
+                    if( acteur.replace(/\s+/, '').length ) {
+                        data=data+'&nomPrenoms='+acteur;
+                    }
+                    if( numPDV.replace(/\s+/, '').length ) {
+                        data=data+'&numeroPdv='+numPDV;
+                    }
+                    if( status.replace(/\s+/, '').length ) {
+                        data=data+'&status='+status;
+                    }
+                    if( datedebut.replace(/\s+/, '').length ) {
+                        data=data+'&start='+datedebut;
+                    }
+                    if( datefin.replace(/\s+/, '').length ) {
+                        data=data+'&end='+datefin;
+                    }
+
+                    if(data.length>0){
+                        data1=data.substr(1);
+                    }
+
+                    var url = '{{ path("getSearchControlle", {id: "article_id"}) }}';
+                    url = url.replace("article_id", data1);
+
+                    $('#visiteControle').dataTable({
+                        "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                        "iDisplayLength": 50,
+                        'bProcessing': true, 'bServerSide': true,
+                        'sAjaxSource': url,
+                        "url": "data.json",
+                        "dataSrc": "tableData",
+                        dom: 'Bfrtip',
+                        "scrollX": true,
+                        buttons:bouton,
+                        'fnServerData': function (source, data, callback) {
+                            $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                    var rows = [];
+                                    for(var i = 0; i<data.aaData.length ; i++){
+                                        const o = data.aaData[i];
+                                        const obj = render_data(o);
+                                        rows.push(obj);
+                                    }
+                                    data.aaData = rows;
+                                    callback(data);
+                                }})
+                        },
+
+                        "columns": [
+                            { "data": function(d){return d.status} },
+                            { "data": function(d){return d.date} },
+                            { "data": function(d){return d.typeVisite} },
+                            { "data": function(d){return d.acteur} },
+                            { "data": function(d){return d.pdv_type_pdv} },
+                            { "data": function(d){return d.pdv_nom_commercial} },
+                            { "data": function(d){return d.pdv_numero_tete_pont} },
+                            { "data": function(d){return d.pdv_entiteControle} },
+                            { "data": function(d){return d.pdv_nom_responsable} },
+                            { "data": function(d){return d.action} },
+                        ]
+                    });
+
+                });
+
+             {% endif %}
+
+             {% if tab == "lister2" %}
+                $(document).ready(function () {
+                    $('#visiteValidee').dataTable({
+                        "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                        "iDisplayLength": 50,
+                        'bProcessing': true, 'bServerSide': true,
+                        'sAjaxSource': '{{ path('getControlleValidee') }}',
+                        "url": "data.json",
+                        "dataSrc": "tableData",
+                        dom: 'Bfrtip',
+                        "scrollX": true,
+                        buttons:bouton,
+                        'fnServerData': function (source, data, callback) {
+                            $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                    var rows = [];
+                                    for(var i = 0; i<data.aaData.length ; i++){
+                                        const o = data.aaData[i];
+                                        const obj = render_data(o);
+                                        rows.push(obj);
+                                    }
+                                    data.aaData = rows;
+                                    callback(data);
+                                }})
+                        },
+
+                        "columns": [
+                            { "data": function(d){return d.date} },
+                            { "data": function(d){return d.typeVisite} },
+                            { "data": function(d){return d.acteur} },
+                            { "data": function(d){return d.pdv_type_pdv} },
+                            { "data": function(d){return d.pdv_nom_commercial} },
+                            { "data": function(d){return d.pdv_numero_tete_pont} },
+                            { "data": function(d){return d.pdv_entiteControle} },
+                            { "data": function(d){return d.pdv_nom_responsable} },
+                            { "data": function(d){return d.action} },
+                        ]
+                    });
+                });
+             {% endif %}
+
+             {% if tab == "lister3" %}
+                $(document).ready(function () {
+                    $('#visiteInvalidee').dataTable({
+                        "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                        "iDisplayLength": 50,
+                        'bProcessing': true, 'bServerSide': true,
+                        'sAjaxSource': '{{ path('getControlleInvalidee') }}',
+                        "url": "data.json",
+                        "dataSrc": "tableData",
+                        dom: 'Bfrtip',
+                        "scrollX": true,
+                        buttons:bouton,
+                        'fnServerData': function (source, data, callback) {
+                            $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                    var rows = [];
+                                    for(var i = 0; i<data.aaData.length ; i++){
+                                        const o = data.aaData[i];
+                                        const obj = render_data(o);
+                                        rows.push(obj);
+                                    }
+                                    data.aaData = rows;
+                                    callback(data);
+                                }})
+                        },
+
+                        "columns": [
+                            { "data": function(d){return d.date} },
+                            { "data": function(d){return d.typeVisite} },
+                            { "data": function(d){return d.acteur} },
+                            { "data": function(d){return d.pdv_type_pdv} },
+                            { "data": function(d){return d.pdv_nom_commercial} },
+                            { "data": function(d){return d.pdv_numero_tete_pont} },
+                            { "data": function(d){return d.pdv_entiteControle} },
+                            { "data": function(d){return d.pdv_nom_responsable} },
+                            { "data": function(d){return d.action} },
+                        ]
+                    });
+                });
+             {% endif %}
+
+             {% if tab == "lister4" %}
+                $(document).ready(function () {
+                    $('#visiteEvaluee').dataTable({
+                        "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                        "iDisplayLength": 50,
+                        'bProcessing': true, 'bServerSide': true,
+                        'sAjaxSource': '{{ path('getControlleEvaluee') }}',
+                        "url": "data.json",
+                        "dataSrc": "tableData",
+                        dom: 'Bfrtip',
+                        "scrollX": true,
+                        buttons:bouton,
+                        'fnServerData': function (source, data, callback) {
+                            $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                    var rows = [];
+                                    for(var i = 0; i<data.aaData.length ; i++){
+                                        const o = data.aaData[i];
+                                        const obj = render_data(o);
+                                        rows.push(obj);
+                                    }
+                                    data.aaData = rows;
+                                    callback(data);
+                                }})
+                        },
+
+                        "columns": [
+                            { "data": function(d){return d.date} },
+                            { "data": function(d){return d.typeVisite} },
+                            { "data": function(d){return d.acteur} },
+                            { "data": function(d){return d.pdv_type_pdv} },
+                            { "data": function(d){return d.pdv_nom_commercial} },
+                            { "data": function(d){return d.pdv_numero_tete_pont} },
+                            { "data": function(d){return d.pdv_entiteControle} },
+                            { "data": function(d){return d.pdv_nom_responsable} },
+                            { "data": function(d){return d.action} },
+                        ]
+                    });
+                });
+             {% endif %}
+
+             {% if tab == "lister5" %}
+                $(document).ready(function () {
+                    $('#visiteSupervisee').dataTable({
+                        "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                        "iDisplayLength": 50,
+                        'bProcessing': true, 'bServerSide': true,
+                        'sAjaxSource': '{{ path('getControlleSupervisee') }}',
+                        "url": "data.json",
+                        "dataSrc": "tableData",
+                        dom: 'Bfrtip',
+                        "scrollX": true,
+                        buttons:bouton,
+                        'fnServerData': function (source, data, callback) {
+                            $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                    var rows = [];
+                                    for(var i = 0; i<data.aaData.length ; i++){
+                                        const o = data.aaData[i];
+                                        const obj = render_data(o);
+                                        rows.push(obj);
+                                    }
+                                    data.aaData = rows;
+                                    callback(data);
+                                }})
+                        },
+
+                        "columns": [
+                            { "data": function(d){return d.date} },
+                            { "data": function(d){return d.typeVisite} },
+                            { "data": function(d){return d.acteur} },
+                            { "data": function(d){return d.pdv_type_pdv} },
+                            { "data": function(d){return d.pdv_nom_commercial} },
+                            { "data": function(d){return d.pdv_numero_tete_pont} },
+                            { "data": function(d){return d.pdv_entiteControle} },
+                            { "data": function(d){return d.pdv_nom_responsable} },
+                            { "data": function(d){return d.action} },
+                        ]
+                    });
+                });
+             {% endif %}
+
+         </script>
+
+         <style>
+             .dataTables_scrollHeadInner , .dataTable {width:100% !important;}
+         </style>
+     {% endif %}
+
+     <nav role="navigation" aria-labelledby="breadcrumb-intro-3" xmlns="http://www.w3.org/1999/html">
+         <ol class="breadcrumb">
+             <li class="breadcrumb-item"><a href="">Reporting</a></li>
+             <li class="breadcrumb-item"><a href="{{path ('historiques')}}">Historiques</a></li>
+             <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{onglet}}</li>
+         </ol>
+     </nav>
+     <div class="p-3 mb-2 bg-primary page-current">HISTORIQUES DES VISITES</div>
+     <div class="main-content container-fluid">
+         <div class="page-title">
+             <ul class="nav nav-tabs" id="myTab" role="tablist">
+                 <li class="nav-item" role="presentation">
+                     <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('historiques')}}">Visites éffectuées</a>
+                 </li>
+                 {% if app.session.get('drdi') is null %}
+                     <li class="nav-item" role="presentation">
+                         <a class="nav-link {% if tab is same as( 'lister2' ) %} active{% endif %}" href="{{path ('historiquesvalider')}}">Visites validées</a>
+                     </li>
+                     <li class="nav-item" role="presentation" >
+                         <a class="nav-link {% if tab is same as( 'lister3' ) %} active{% endif %}" href="{{path ('historiquesinvalider')}}">Visites invalidées</a>
+                     </li>
+                     <li class="nav-item" role="presentation" >
+                         <a class="nav-link {% if tab is same as( 'lister4' ) %} active{% endif %}" href="{{path ('historiquesevaluation')}}">Visites d'évaluation</a>
+                     </li>
+                     <li class="nav-item" role="presentation" >
+                         <a class="nav-link {% if tab is same as( 'lister5' ) %} active{% endif %}" href="{{path ('historiquessupervision')}}">Visites de supervision</a>
+                     </li>
+                 {% endif %}
+
+                 {% if tab is same as( 'detailsupervision' ) %}
+                     <li class="nav-item" role="presentation" style="display:{% if tab == "detailsupervision" %}block {% else %}none{% endif %}">
+                         <a class="nav-link active" href="{{path ('detailsupervision',{'id':dataSelect['id']})}}">Détail de la visite</a>
+                     </li>
+                 {% endif %}
+
+                 {% if tab is same as( 'detailadministration' ) %}
+                     <li class="nav-item" role="presentation" style="display:{% if tab == "detailadministration" %}block {% else %}none{% endif %}">
+                         <a class="nav-link active" href="{{path ('detailadministration',{'id':dataSelect['id']})}}">Détail de la visite</a>
+                     </li>
+                 {% endif %}
+
+                 {% if tab is same as( 'detailevaluation' ) %}
+                     <li class="nav-item" role="presentation" style="display:{% if tab == "detailevaluation" %}block {% else %}none{% endif %}">
+                         <a class="nav-link active" href="{{path ('detailevaluation',{'id':dataSelect['id']})}}">Détail de la visite</a>
+                     </li>
+                 {% endif %}
+
+                 {% if tab is same as( 'detail' ) %}
+                     <li class="nav-item" role="presentation" style="display:{% if tab == "detail" %}block {% else %}none{% endif %}">
+                         <a class="nav-link active" href="{{path ('detailfiche',{'id':dataSelect['id']})}}">Détail de la visite</a>
+                     </li>
+                 {% endif %}
+                 {% if tab is same as( 'detailcontrole' ) %}
+                     <li class="nav-item" role="presentation" style="display:{% if tab == "detailcontrole" %}block {% else %}none{% endif %}">
+                         <a class="nav-link active" href="{{path ('fichesynthesecontrole',{'id':databd['id']})}}">Détail de la visite de contrôle</a>
+                     </li>
+                 {% endif %}
+                 {% if tab is same as( 'detailefichevaluation' ) %}
+                     <li class="nav-item" role="presentation" style="display:{% if tab == "detailefichevaluation" %}block {% else %}none{% endif %}">
+                         <a class="nav-link active" href="{{path ('fichesyntheseevaluation',{'id':databd['id']})}}">Détail de la visite d'évaluation</a>
+                     </li>
+                 {% endif %}
+             </ul>
+             <div class="tab-content" id="myTabContent">
+                 <!-- Liste des visites effectuées  -->
+                 <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                     {% if tab == "lister" %}
+                         <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                             <form method="POST" action="">
+                                <div class="form-row justify-content-center">
+                                 {# {{dump(acteur)}} #}
+                                     <div class="form-group col-md-4">
+                                         <label> Acteur </label>
+                                        <input type="text" id="acteur" name="nom_prenoms" class="form-control majuscule" >
+                                     </div>
+                                    <div class="form-group col-md-2">
+                                        <label>Statut</label>
+                                        <select class="custom-select" id="status" name="status">
+                                            <option value="">Choisir un statut</option>
+                                            <option value="1">VALIDER</option>
+                                            <option value="2">INVALIDER</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-2">
+                                        <label> Type de visite </label>
+                                        <select class="custom-select" id="typevisite" name="typevisite">
+                                            <option value="">Choisir un type</option>
+                                            {% for colonne in typevisite %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row justify-content-center">
+                                    <div class="form-group col-md-2">
+                                        <label>Numéro PDV</label>
+                                        <input type="number" id="numPDV" class="form-control majuscule" >
+                                    </div>
+                                     <div class="form-group col-md-2">
+                                         <label>Date début</label>
+                                         <input type="date" id="datedebut" name="datedebut" class="form-control majuscule">
+                                     </div>
+                                     <div class="form-group col-md-2">
+                                         <label>Date de fin</label>
+                                         <input type="date" id="datefin" name="datefin" class="form-control majuscule">
+                                     </div>
+                                 </div>
+                                 <div class="form-row justify-content-center">
+                                     <div class="form-group col-md-2">
+                                         <button type="button" id="submit_form"  class="btn btn-primary">Rechercher</button>
+                                     </div>
+                                     <div class="form-group col-md-2">
+                                         <a class="btn btn-success" href="{{path ('historiques')}}" role="button">Annuler la recherche</a>
+                                     </div>
+                                 </div>
+                             </form>
+                             {# <form method="POST" action="">
+                                 <div class="form-row">
+                                     <div class="form-group col-md-4">
+                                         <label> Acteur </label>
+                                         <select class="custom-select" id="acteur" name="acteur" {% if saisie is defined %} value="{{ saisie['acteur']}}" {% endif %}>
+                                             <option value="">Choisir un acteur</option>
+                                             {% for colonne in acteur %}
+                                                 <option value="{{ colonne['id'] }}">{{ colonne['nom_prenoms']|upper }} { {% if colonne['type_acteur'] is not null %} {{colonne['type_acteur']|upper}} {% endif %} }</option>
+                                             {% endfor %}
+                                         </select>
+                                     </div>
+                                     <div class="form-group col-md-3">
+                                         <label> Type de visite </label>
+                                         <select class="custom-select" id="typevisite" name="typevisite" {% if saisie is defined %} value="{{ saisie['typevisite']}}" {% endif %}>
+                                             <option value="">Choisir un type</option>
+                                             {% for colonne in typevisite %}
+                                                 <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                             {% endfor %}
+                                         </select>
+                                     </div>
+                                     <div class="form-group col-md-2">
+                                         <label>Date début</label>
+                                         <input type="date" id="datedebut" name="datedebut" {% if saisie is defined %} value="{{ saisie['datedebut']}}" {% endif %} class="form-form-control majuscule">
+                                     </div>
+                                     <div class="form-group col-md-2">
+                                         <label>Date de fin</label>
+                                         <input type="date" id="datefin" name="datefin" {% if saisie is defined %} value="{{ saisie['datefin']}}" {% endif %} class="form-form-control majuscule">
+                                     </div>
+                                 </div>
+                                 <div class="form-row justify-content-center">
+                                     <div class="form-group col-md-2">
+                                         <button type="button" id="submit_form"  class="btn btn-primary">Rechercher</button>
+                                     </div>
+                                     <div class="form-group col-md-2">
+                                         <a class="btn btn-success" href="{{path ('historiques')}}" role="button">Annuler la recherche</a>
+                                     </div>
+                                 </div>
+                             </form> #}
+                         </div>
+                         <table id="visiteControle" class="table table-hover display">
+                             <thead>
+                             <tr>
+                                 <th class="text-center">Status</th>
+                                 <th class="text-center">Date du contrôle</th>
+                                 <th class="text-center">Type de visite</th>
+                                 <th class="text-center">Contrôleur</th>
+                                 <th class="text-center">Type de PDV</th>
+                                 <th class="text-center">Nom Commercial</th>
+                                 <th class="text-center">Numéro TP</th>
+                                 <th class="text-center">Entité Contrôlé</th>
+                                 <th class="text-center">Nom du Gérant</th>
+                                 <th class="text-center">Action</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                             </tbody>
+                             <tfoot>
+                             </tfoot>
+                         </table>
+                     {% endif %}
+                 </div>
+
+                 <!-- Liste des visites valider  -->
+                 <div class="tab-pane fade {% if tab == "lister2" %}show active{% endif %}" id="lister2" role="tabpanel" aria-labelledby="lister2-tab">
+                     {% if tab == "lister2" %}
+                         <table id="visiteValidee" class="table table-hover display">
+                             <thead>
+                             <tr>
+                                 <th class="text-center">Date du contrôle</th>
+                                 <th class="text-center">Type de visite</th>
+                                 <th class="text-center">Contrôleur</th>
+                                 <th class="text-center">Type de PDV</th>
+                                 <th class="text-center">Nom Commercial</th>
+                                 <th class="text-center">Numéro TP</th>
+                                 <th class="text-center">Entité Contrôlé</th>
+                                 <th class="text-center">Nom du Gérant</th>
+                                 <th class="text-center">Action</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                             </tbody>
+                             <tfoot>
+                             </tfoot>
+                         </table>
+                     {% endif %}
+                 </div>
+
+                 <!-- Liste des visites invalider -->
+                 <div class="tab-pane fade {% if tab == "lister3" %}show active{% endif %}" id="lister3" role="tabpanel" aria-labelledby="lister3-tab">
+                     {% if tab == "lister3"  %}
+                         <table id="visiteInvalidee" class="table table-hover display">
+                             <thead>
+                             <tr>
+                                 <th class="text-center">Date du contrôle</th>
+                                 <th class="text-center">Type de visite</th>
+                                 <th class="text-center">Contrôleur</th>
+                                 <th class="text-center">Type de PDV</th>
+                                 <th class="text-center">Nom Commercial</th>
+                                 <th class="text-center">Numéro TP</th>
+                                 <th class="text-center">Entité Contrôlé</th>
+                                 <th class="text-center">Nom du Gérant</th>
+                                 <th class="text-center">Action</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                             </tbody>
+                             <tfoot>
+                             </tfoot>
+                         </table>
+                     {% endif %}
+                 </div>
+
+                 <!-- Liste des visites d'evaluation effectuées  -->
+                 <div class="tab-pane fade {% if tab == "lister4" %}show active{% endif %} " id="lister4" role="tabpanel" aria-labelledby="lister4-tab">
+                     {% if tab == "lister4" %}
+                         <table id="visiteEvaluee" class="table table-hover display">
+                             <thead>
+                             <tr>
+                                 <th class="text-center">Date du contrôle</th>
+                                 <th class="text-center">Type de visite</th>
+                                 <th class="text-center">Contrôleur</th>
+                                 <th class="text-center">Type de PDV</th>
+                                 <th class="text-center">Nom Commercial</th>
+                                 <th class="text-center">Numéro TP</th>
+                                 <th class="text-center">Entité Contrôlé</th>
+                                 <th class="text-center">Nom du Gérant</th>
+                                 <th class="text-center">Action</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                             </tbody>
+                             <tfoot>
+                             </tfoot>
+                         </table>
+                     {% endif %}
+                 </div>
+
+                 <!-- Liste des visites de supervision effectuées  -->
+                 <div class="tab-pane fade {% if tab == "lister5" %}show active{% endif %} " id="lister5" role="tabpanel" aria-labelledby="lister5-tab">
+                     {% if tab == "lister5" %}
+                         <table id="visiteSupervisee" class="table table-hover display">
+                             <thead>
+                             <tr>
+                                 <th class="text-center">Date du contrôle</th>
+                                 <th class="text-center">Type de visite</th>
+                                 <th class="text-center">Contrôleur</th>
+                                 <th class="text-center">Type de PDV</th>
+                                 <th class="text-center">Nom Commercial</th>
+                                 <th class="text-center">Numéro TP</th>
+                                 <th class="text-center">Entité Contrôlé</th>
+                                 <th class="text-center">Nom du Gérant</th>
+                                 <th class="text-center">Action</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                             </tbody>
+                             <tfoot>
+                             </tfoot>
+                         </table>
+                     {% endif %}
+                 </div>
+
+
+                 <!-- détail de la visite -->
+                 <div class="tab-pane fade {% if tab == "detailadministration" %}show active{% endif %}" id="detailadministration" role="tabpanel" aria-labelledby="detailadministration-tab">
+                     {% if tab == "detailadministration"  %}
+                         {% if dataSelect is defined %}
+                             <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                                 <table  class="table table-hover display">
+                                     <thead>
+                                     <tr>
+                                         <th>VISITE EFFECTUEE</th>
+                                         <th style="color: red">SIGNATURE :</th>
+                                         <th>CONTROLEUR</th>
+                                         <th>GERANT</th>
+                                         <th>NUMERO PDV</th>
+                                         <th>CODE DE VALIDATION</th>
+                                     </tr>
+                                     </thead>
+                                     <tbody>
+                                     <tr>
+                                         <td>
+                                             <label>Type de visite éffectué : </label> {{ dataSelect['typeVisite']['libelle'] }} <br>
+                                             <label>Date : </label> {{ dataSelect['date']|date("d/m/Y H:i:s") }}
+                                         </td>
+                                         <td>
+                                             <label>Nom & Prénoms : </label>  <br>
+                                             <label>Contact : </label> <br>
+                                             <label>Email : </label>
+                                         </td>
+                                         <td>
+                                             {{ dataSelect['acteur']['nom_prenoms'] }} <br>
+                                             {{ dataSelect['acteur']['contact'] }} <br>
+                                             {{ dataSelect['acteur']['email'] }}
+                                         </td>
+                                         <td>
+                                             {% if signature['gerant'] is defined %}  {{ signature['gerant']['nomPrenoms'] }} <br>
+                                                 {{ signature['gerant']['contact'] }} {% else %} Aucune données {% endif %}
+                                         </td>
+                                         <td>
+                                             {% if signature['numeroPdv'] is defined %} {{ signature['numeroPdv']}} {% else %} Aucune données {% endif %}
+                                         </td>
+                                         <td>
+                                             {% if signature['code'] is defined %} {{ signature['code']}} {% else %} Aucune données {% endif %}
+                                         </td>
+                                     </tr>
+                                     </tbody>
+                                 </table>
+                                 <br>
+                                 {% if dataSelect['motive'] is not null %}
+                                     <br>
+                                     <div class="form-row">
+                                         <div class="col-sm-12" style="color: red;font-weight: bold;">
+                                             <label>Motif de rejet : </label> {{ dataSelect['motive'] }}
+                                         </div>
+                                     </div>
+                                     <br>
+                                 {% endif %}
+                                 {% if app.session.get('superAdmin') is not null %}
+                                     <div class="form-row justify-content-center">
+                                         <button type="button"  style="margin-right: 10px" class="btn btn-info float-left" data-toggle="modal" data-target="#invalidationVisite" data-whatever="{{ path ('invaliderfiche',{'id':dataSelect['id']}) }},Invalidation">Invalider</button>
+                                         {% if dataSelect['status'] == 1 %}
+                                             <button type="button" style="margin-right: 10px" class="btn btn-primary" data-toggle="modal" data-target="#reaffectationVisite" data-whatever="{{ path ('reaffecterfiche',{'id':dataSelect['id']}) }},Réaffectation d'une visite">Réaffecter</button>
+                                         {% endif %}
+                                         <button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('validerfiche',{'id':dataSelect['id']}) }},Validation,valider,cette visite de contrôle">Valider</button>
+                                     </div>
+                                 {% endif %}
+                             </div>
+                             <br>
+                             {% set cp = 0 %}
+                             {% set tab=[] %}
+                             {% for sections in dataSelect['response']['sections'] %}
+                                 {% for sousSections in sections['sousSections'] %}
+                                     {% for paragraphes in sousSections['paragraphes'] %}
+                                         {% if cp < paragraphes['questions']|length %}
+                                             {% set tab=[] %}
+                                             {% set cp = paragraphes['questions']|length %}
+                                             {% for question in paragraphes['questions'] %}
+                                                 {% set tab = tab|merge([question['label']]) %}
+                                             {% endfor %}
+                                         {% else %}
+                                             {% set cp = cp %}
+                                         {% endif %}
+                                     {% endfor %}
+                                 {% endfor %}
+                             {% endfor %}
+
+                             <table id="srollTable" class="table table-hover display">
+                                 <thead>
+                                 <tr>
+                                     <th rowspan="2">N</th>
+                                     <th class="text-center">Points de contrôles</th>
+                                     {% for i in 0..cp-1  %}
+                                         <th class="text-center">{{ tab[i] }}</th>
+                                     {% endfor %}
+                                 </tr>
+                                 <tr>
+                                     <th>
+                                         Nom de l'entité contrôlée : <span style="color: red">{{ dataSelect['pdv']['entiteControle'] }}</span><br>
+                                         Numéro puce PDV OM : <span style="color: red">{{ dataSelect['pdv']['numero_pdv'] }}</span>
+                                     </th>
+                                     <th>
+                                         Ville ou Commune : <span style="color: red">{{ dataSelect['pdv']['ville']['libelle'] }}</span><br>
+                                         Localisation précise : <span style="color: red">{{ dataSelect['pdv']['initialAdresse'] }}</span>
+                                     </th>
+                                     <th>
+                                         Nom Grossiste/Indépendant/ : <span style="color: red">{{ dataSelect['pdv']['type_pdv']['libelle'] }}</span><br>
+                                         Numéro tête de pont : <span style="color: red">{{ dataSelect['pdv']['numero_tete_pont'] }}</span>
+                                     </th>
+                                     {% for i in 0..cp-3 %}
+                                         <th></th>
+                                     {% endfor %}
+                                 </tr>
+                                 </thead>
+                                 <tbody>
+                                 {% set cpt = 1 %}
+                                 <tr>
+                                     <td style="font-weight: bold">0</td>
+                                     <td style="font-weight: bold" class="text-center">Points de contrôles</td>
+                                     {% for i in 0..cp-1  %}
+                                         <td style="font-weight: bold" class="text-center">{{ tab[i] }}</td>
+                                     {% endfor %}
+                                 </tr>
+                                 {% for sections in dataSelect['response']['sections'] %}
+                                     <tr style="background-color: red">
+                                         <td>{{ cpt }}</td>
+                                         <td>{{ sections['titre'] }}</td>
+                                         {% for i in 0..cp %}
+                                             <td></td>
+                                         {% endfor %}
+                                     </tr>
+                                     {% set nb=0 %}
+
+                                     {% for sousSections in sections['sousSections'] %}
+
+                                         {% for paragraphes in sousSections['paragraphes'] %}
+                                             {% set taille = paragraphes['questions']|length %}
+
+                                             {% if paragraphes['titre'] == "" %}
+                                                 <tr>
+                                                     <td>{{ cpt }}</td>
+                                                     <td>{{ sousSections['titre'] }}</td>
+                                                     {% if taille >= cp or paragraphes['questions'][0]['label'] != "Conformité" %}
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% else %}
+                                                         <td></td>
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% endif %}
+                                                 </tr>
+                                             {% else %}
+                                                 <tr>
+                                                     <td>{{ cpt }}</td>
+                                                     <td>{{ paragraphes['titre'] }}</td>
+                                                     {% if taille >= cp or paragraphes['questions'][0]['label'] != "Conformité" %}
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% else %}
+                                                         <td></td>
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% endif %}
+                                                 </tr>
+                                             {% endif %}
+
+                                         {% endfor %}
+
+                                     {% endfor %}
+                                     {% set cpt = cpt + 1 %}
+                                 {% endfor %}
+                                 </tbody>
+                                 <tfoot>
+                                 </tfoot>
+                             </table>
+                             <br><br>
+                             <div class="form-row">
+                                 <div class="col-sm-12">
+                                     <label style="color: red;font-weight: bold;">Observation : </label> {{ dataSelect['response']['observation_agt'] }}
+                                 </div>
+                             </div>
+                             <br><br>
+                             {% for image in images %}
+                                 <img alt="Image" src="{{ base_64_prefix }}{{image['base64_image']}}" data-toggle="tooltip" data-placement="top" title="{{ image['image_name'] }}" class="preview_document" style="width:18%; height: 200px" data-toggle="tooltip" data-placement="top" title=""/>
+                             {% endfor %}
+                         {% endif %}
+
+                     {% endif %}
+                 </div>
+
+                 <!-- détail de la visite -->
+                 <div class="tab-pane fade {% if tab == "detailsupervision" %}show active{% endif %}" id="detailsupervision" role="tabpanel" aria-labelledby="detailsupervision-tab">
+                     {% if tab == "detailsupervision"  %}
+                         {% if dataSelect is defined %}
+                             <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                                 <table  class="table table-hover display">
+                                     <thead>
+                                     <tr>
+                                         <th>VISITE EFFECTUEE</th>
+                                         <th style="color: red">SIGNATURE :</th>
+                                         <th>CONTROLEUR</th>
+                                         <th>GERANT</th>
+                                         <th>NUMERO PDV</th>
+                                         <th>CODE DE VALIDATION</th>
+                                     </tr>
+                                     </thead>
+                                     <tbody>
+                                     <tr>
+                                         <td>
+                                             <label>Type de visite éffectué : </label> {{ dataSelect['typeVisite']['libelle'] }} <br>
+                                             <label>Date : </label> {{ dataSelect['date']|date("d/m/Y H:i:s") }}
+                                         </td>
+                                         <td>
+                                             <label>Nom & Prénoms : </label>  <br>
+                                             <label>Contact : </label> <br>
+                                             <label>Email : </label>
+                                         </td>
+                                         <td>
+                                             {{ dataSelect['acteur']['nom_prenoms'] }} <br>
+                                             {{ dataSelect['acteur']['contact'] }} <br>
+                                             {{ dataSelect['acteur']['email'] }}
+                                         </td>
+                                         <td>
+                                             {% if signature['gerant'] is defined %}  {{ signature['gerant']['nomPrenoms'] }} <br>
+                                                 {{ signature['gerant']['contact'] }} {% else %} Aucune données {% endif %}
+                                         </td>
+                                         <td>
+                                             {% if signature['numeroPdv'] is defined %} {{ signature['numeroPdv']}} {% else %} Aucune données {% endif %}
+                                         </td>
+                                         <td>
+                                             {% if signature['code'] is defined %} {{ signature['code']}} {% else %} Aucune données {% endif %}
+                                         </td>
+                                     </tr>
+                                     </tbody>
+                                 </table>
+                                 <br>
+                                 {% if dataSelect['motive'] is not null %}
+                                     <br>
+                                     <div class="form-row">
+                                         <div class="col-sm-12" style="color: red;font-weight: bold;">
+                                             <label>Motif de rejet : </label> {{ dataSelect['motive'] }}
+                                         </div>
+                                     </div>
+                                     <br>
+                                 {% endif %}
+                                 {% if app.session.get('superAdmin') is not null %}
+                                     <div class="form-row justify-content-center">
+                                         <button type="button"  style="margin-right: 10px" class="btn btn-info float-left" data-toggle="modal" data-target="#invalidationVisite" data-whatever="{{ path ('invaliderfiche',{'id':dataSelect['id']}) }},Invalidation">Invalider</button>
+                                         <button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('validerfiche',{'id':dataSelect['id']}) }},Validation,valider,cette visite de contrôle">Valider</button>
+                                     </div>
+                                 {% endif %}
+                             </div>
+                             <br>
+                             {% set cp = 0 %}
+                             {% set tab=[] %}
+                             {% for sections in dataSelect['response']['sections'] %}
+                                 {% for sousSections in sections['sousSections'] %}
+                                     {% for paragraphes in sousSections['paragraphes'] %}
+                                         {% if cp < paragraphes['questions']|length %}
+                                             {% set tab=[] %}
+                                             {% set cp = paragraphes['questions']|length %}
+                                             {% for question in paragraphes['questions'] %}
+                                                 {% set tab = tab|merge([question['label']]) %}
+                                             {% endfor %}
+                                         {% else %}
+                                             {% set cp = cp %}
+                                         {% endif %}
+                                     {% endfor %}
+                                 {% endfor %}
+                             {% endfor %}
+
+                             <table id="srollTable" class="table table-hover display">
+                                 <thead>
+                                 <tr>
+                                     <th rowspan="2">N</th>
+                                     <th class="text-center">Points de contrôles</th>
+                                     {% for i in 0..cp-1  %}
+                                         <th class="text-center">{{ tab[i] }}</th>
+                                     {% endfor %}
+                                 </tr>
+                                 <tr>
+                                     <th>
+                                         Nom de l'entité contrôlée : <span style="color: red">{{ dataSelect['pdv']['entiteControle'] }}</span><br>
+                                         Numéro puce PDV OM : <span style="color: red">{{ dataSelect['pdv']['numero_pdv'] }}</span>
+                                     </th>
+                                     <th>
+                                         Ville ou Commune : <span style="color: red">{{ dataSelect['pdv']['ville']['libelle'] }}</span><br>
+                                         Localisation précise : <span style="color: red">{{ dataSelect['pdv']['initialAdresse'] }}</span>
+                                     </th>
+                                     <th>
+                                         Nom Grossiste/Indépendant/ : <span style="color: red">{{ dataSelect['pdv']['type_pdv']['libelle'] }}</span><br>
+                                         Numéro tête de pont : <span style="color: red">{{ dataSelect['pdv']['numero_tete_pont'] }}</span>
+                                     </th>
+                                     {% for i in 0..cp-3 %}
+                                         <th></th>
+                                     {% endfor %}
+                                 </tr>
+                                 </thead>
+                                 <tbody>
+                                 {% set cpt = 1 %}
+                                 <tr>
+                                     <td style="font-weight: bold">0</td>
+                                     <td style="font-weight: bold" class="text-center">Points de contrôles</td>
+                                     {% for i in 0..cp-1  %}
+                                         <td style="font-weight: bold" class="text-center">{{ tab[i] }}</td>
+                                     {% endfor %}
+                                 </tr>
+                                 {% for sections in dataSelect['response']['sections'] %}
+                                     <tr style="background-color: red">
+                                         <td>{{ cpt }}</td>
+                                         <td>{{ sections['titre'] }}</td>
+                                         {% for i in 0..cp %}
+                                             <td></td>
+                                         {% endfor %}
+                                     </tr>
+                                     {% set nb=0 %}
+
+                                     {% for sousSections in sections['sousSections'] %}
+
+                                         {% for paragraphes in sousSections['paragraphes'] %}
+                                             {% set taille = paragraphes['questions']|length %}
+
+                                             {% if paragraphes['titre'] == "" %}
+                                                 <tr>
+                                                     <td>{{ cpt }}</td>
+                                                     <td>{{ sousSections['titre'] }}</td>
+                                                     {% if paragraphes['questions'][0]['label'] != "Conformité" %}
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% else %}
+                                                         <td></td>
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% endif %}
+                                                 </tr>
+                                             {% else %}
+                                                 <tr>
+                                                     <td>{{ cpt }}</td>
+                                                     <td>{{ paragraphes['titre'] }}</td>
+                                                     {% if paragraphes['questions'][0]['label'] != "Conformité" %}
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% else %}
+                                                         <td></td>
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% endif %}
+                                                 </tr>
+                                             {% endif %}
+
+                                         {% endfor %}
+
+                                     {% endfor %}
+                                     {% set cpt = cpt + 1 %}
+                                 {% endfor %}
+                                 </tbody>
+                                 <tfoot>
+                                 </tfoot>
+                             </table>
+                             <br><br>
+                             <div class="form-row">
+                                 <div class="col-sm-12">
+                                     <label style="color: red;font-weight: bold;">Observation : </label> {{ dataSelect['response']['observation_agt'] }}
+                                 </div>
+                             </div>
+                             <br><br>
+                             {% for image in images %}
+                                 <img alt="Image" src="{{ base_64_prefix }}{{image['base64_image']}}" data-toggle="tooltip" data-placement="top" title="{{ image['image_name'] }}" class="preview_document" style="width:18%; height: 200px" data-toggle="tooltip" data-placement="top" title=""/>
+                             {% endfor %}
+                         {% endif %}
+                     {% endif %}
+                 </div>
+
+                 <!-- détail de la visite -->
+                 <div class="tab-pane fade {% if tab == "detailevaluation" %}show active{% endif %}" id="detailevaluation" role="tabpanel" aria-labelledby="detailevaluation-tab">
+                     {% if tab == "detailevaluation"  %}
+                         {% if dataSelect is defined %}
+                             <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                                 <table  class="table table-hover display">
+                                     <thead>
+                                     <tr>
+                                         <th>VISITE EFFECTUEE</th>
+                                         <th style="color: red">SIGNATURE :</th>
+                                         <th>CONTROLEUR</th>
+                                         <th>GERANT</th>
+                                         <th>NUMERO PDV</th>
+                                         <th>CODE DE VALIDATION</th>
+                                     </tr>
+                                     </thead>
+                                     <tbody>
+                                     <tr>
+                                         <td>
+                                             <label>Type de visite éffectué : </label> {{ dataSelect['typeVisite']['libelle'] }} <br>
+                                             <label>Date : </label> {{ dataSelect['date']|date("d/m/Y H:i:s") }}
+                                         </td>
+                                         <td>
+                                             <label>Nom & Prénoms : </label>  <br>
+                                             <label>Contact : </label> <br>
+                                             <label>Email : </label>
+                                         </td>
+                                         <td>
+                                             {{ dataSelect['acteur']['nom_prenoms'] }} <br>
+                                             {{ dataSelect['acteur']['contact'] }} <br>
+                                             {{ dataSelect['acteur']['email'] }}
+                                         </td>
+                                         <td>
+                                             {% if signature['gerant'] is defined %}  {{ signature['gerant']['nomPrenoms'] }} <br>
+                                                 {{ signature['gerant']['contact'] }} {% else %} Aucune données {% endif %}
+                                         </td>
+                                         <td>
+                                             {% if signature['numeroPdv'] is defined %} {{ signature['numeroPdv']}} {% else %} Aucune données {% endif %}
+                                         </td>
+                                         <td>
+                                             {% if signature['code'] is defined %} {{ signature['code']}} {% else %} Aucune données {% endif %}
+                                         </td>
+                                     </tr>
+                                     </tbody>
+                                 </table>
+                                 <br>
+                                 {% if dataSelect['motive'] is not null %}
+                                     <br>
+                                     <div class="form-row">
+                                         <div class="col-sm-12" style="color: red;font-weight: bold;">
+                                             <label>Motif de rejet : </label> {{ dataSelect['motive'] }}
+                                         </div>
+                                     </div>
+                                     <br>
+                                 {% endif %}
+                                 {% if app.session.get('superAdmin') is not null %}
+                                     <div class="form-row justify-content-center">
+                                         <button type="button"  style="margin-right: 10px" class="btn btn-info float-left" data-toggle="modal" data-target="#invalidationVisite" data-whatever="{{ path ('invaliderfiche',{'id':dataSelect['id']}) }},Invalidation">Invalider</button>
+                                         <button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('validerfiche',{'id':dataSelect['id']}) }},Validation,valider,cette visite de contrôle">Valider</button>
+                                     </div>
+                                 {% endif %}
+                             </div>
+                             <br>
+                             {% set cp = 0 %}
+                             {% set tab=[] %}
+                             {% for sections in dataSelect['response']['sections'] %}
+                                 {% for sousSections in sections['sousSections'] %}
+                                     {% for paragraphes in sousSections['paragraphes'] %}
+                                         {% if cp < paragraphes['questions']|length %}
+                                             {% set tab=[] %}
+                                             {% set cp = paragraphes['questions']|length %}
+                                             {% for question in paragraphes['questions'] %}
+                                                 {% set tab = tab|merge([question['label']]) %}
+                                             {% endfor %}
+                                         {% else %}
+                                             {% set cp = cp %}
+                                         {% endif %}
+                                     {% endfor %}
+                                 {% endfor %}
+                             {% endfor %}
+
+                             <table id="srollTable" class="table table-hover display">
+                                 <thead>
+                                 <tr>
+                                     <th rowspan="2">N</th>
+                                     <th class="text-center">Points de contrôles</th>
+                                     <th class="text-center">Réponse</th>
+                                     {% for i in 0..cp-1  %}
+                                         <th class="text-center">{{ tab[i] }}</th>
+                                     {% endfor %}
+                                 </tr>
+                                 <tr>
+                                     <th>
+                                         Nom de l'entité contrôlée : <span style="color: red">{{ dataSelect['pdv']['entiteControle'] }}</span><br>
+                                         Numéro puce PDV OM : <span style="color: red">{{ dataSelect['pdv']['numero_pdv'] }}</span>
+                                     </th>
+                                     <th>
+                                         Ville ou Commune : <span style="color: red">{{ dataSelect['pdv']['ville']['libelle'] }}</span><br>
+                                         Localisation précise : <span style="color: red">{{ dataSelect['pdv']['initialAdresse'] }}</span>
+                                     </th>
+                                     <th>
+                                         Nom Grossiste/Indépendant/ : <span style="color: red">{{ dataSelect['pdv']['type_pdv']['libelle'] }}</span><br>
+                                         Numéro tête de pont : <span style="color: red">{{ dataSelect['pdv']['numero_tete_pont'] }}</span>
+                                     </th>
+                                     {% for i in 0..cp-2 %}
+                                         <th></th>
+                                     {% endfor %}
+                                 </tr>
+                                 </thead>
+                                 <tbody>
+                                 {% set cpt = 1 %}
+                                 <tr>
+                                     <td style="font-weight: bold">0</td>
+                                     <td style="font-weight: bold" class="text-center">Points de contrôles</td>
+                                     <th class="text-center">Réponse</th>
+                                     {% for i in 0..cp-1  %}
+                                         <td style="font-weight: bold" class="text-center">{{ tab[i] }}</td>
+                                     {% endfor %}
+                                 </tr>
+                                 {% for sections in dataSelect['response']['sections'] %}
+                                     <tr style="background-color: red">
+                                         <td>{{ cpt }}</td>
+                                         <td>{{ sections['titre'] }}</td>
+                                         {% for i in 0..cp+1 %}
+                                             <td></td>
+                                         {% endfor %}
+                                     </tr>
+                                     {% set nb=0 %}
+
+                                     {% for sousSections in sections['sousSections'] %}
+
+                                         {% for paragraphes in sousSections['paragraphes'] %}
+                                             {% set taille = paragraphes['questions']|length %}
+
+                                             {% if paragraphes['titre'] == "" %}
+                                                 <tr>
+                                                     <td>{{ cpt }}</td>
+                                                     <td>{{ sousSections['titre'] }}</td>
+                                                     {% if paragraphes['questions'][0]['label'] != "Conformité" %}
+                                                         {% for q in 0..cp %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% else %}
+                                                         <td></td>
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% endif %}
+                                                 </tr>
+                                             {% else %}
+                                                 <tr>
+                                                     <td>{{ cpt }}</td>
+                                                     <td>{{ paragraphes['titre'] }}</td>
+                                                     {% if paragraphes['questions'][0]['label'] != "Conformité" %}
+                                                         {% for q in 0..cp %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% else %}
+                                                         <td></td>
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% endif %}
+                                                 </tr>
+                                             {% endif %}
+
+                                         {% endfor %}
+
+                                     {% endfor %}
+                                     {% set cpt = cpt + 1 %}
+                                 {% endfor %}
+                                 </tbody>
+                                 <tfoot>
+                                 </tfoot>
+                             </table>
+                             <br><br>
+                             <div class="form-row">
+                                 <div class="col-sm-12">
+                                     <label style="color: red;font-weight: bold;">Observation : </label> {{ dataSelect['response']['observation_agt'] }}
+                                 </div>
+                             </div>
+                             <br><br>
+                             {% for image in images %}
+                                 <img alt="Image" src="{{ base_64_prefix }}{{image['base64_image']}}" data-toggle="tooltip" data-placement="top" title="{{ image['image_name'] }}" class="preview_document" style="width:18%; height: 200px" data-toggle="tooltip" data-placement="top" title=""/>
+                             {% endfor %}
+                         {% endif %}
+
+                     {% endif %}
+                 </div>
+
+                 <!-- détail de la visite -->
+                 <div class="tab-pane fade {% if tab == "detail" %}show active{% endif %}" id="detail" role="tabpanel" aria-labelledby="detail-tab">
+                     {% if tab == "detail"  %}
+                         {% if dataSelect is defined %}
+                             <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                                 <table  class="table table-hover display">
+                                     <thead>
+                                     <tr>
+                                         <th>VISITE EFFECTUEE</th>
+                                         <th style="color: red">SIGNATURE :</th>
+                                         <th>CONTROLEUR</th>
+                                         <th>GERANT</th>
+                                         <th>NUMERO PDV</th>
+                                         <th>CODE DE VALIDATION</th>
+                                     </tr>
+                                     </thead>
+                                     <tbody>
+                                     <tr>
+                                         <td>
+                                             <label>Type de visite éffectué : </label> {{ dataSelect['typeVisite']['libelle'] }} <br>
+                                             <label>Date : </label> {{ dataSelect['date']|date("d/m/Y H:i:s") }}
+                                         </td>
+                                         <td>
+                                             <label>Nom & Prénoms : </label>  <br>
+                                             <label>Contact : </label> <br>
+                                             <label>Email : </label>
+                                         </td>
+                                         <td>
+                                             {{ dataSelect['acteur']['nom_prenoms'] }} <br>
+                                             {{ dataSelect['acteur']['contact'] }} <br>
+                                             {{ dataSelect['acteur']['email'] }}
+                                         </td>
+                                         <td>
+                                             {% if signature['gerant'] is defined %}  {{ signature['gerant']['nomPrenoms'] }} <br>
+                                                 {{ signature['gerant']['contact'] }} {% else %} Aucune données {% endif %}
+                                         </td>
+                                         <td>
+                                             {% if signature['numeroPdv'] is defined %} {{ signature['numeroPdv']}} {% else %} Aucune données {% endif %}
+                                         </td>
+                                         <td>
+                                             {% if signature['code'] is defined %} {{ signature['code']}} {% else %} Aucune données {% endif %}
+                                         </td>
+                                     </tr>
+                                     </tbody>
+                                 </table>
+                                 <br>
+                                 {% if dataSelect['motive'] is not null %}
+                                     <br>
+                                     <div class="form-row">
+                                         <div class="col-sm-12" style="color: red;font-weight: bold;">
+                                             <label>Motif de rejet : </label> {{ dataSelect['motive'] }}
+                                         </div>
+                                     </div>
+                                     <br>
+                                 {% endif %}
+                                 {% if app.session.get('superAdmin') is not null %}
+                                     <div class="form-row justify-content-center">
+                                         <button type="button"  style="margin-right: 10px" class="btn btn-info float-left" data-toggle="modal" data-target="#invalidationVisite" data-whatever="{{ path ('invaliderfiche',{'id':dataSelect['id']}) }},Invalidation">Invalider</button>
+                                         {% if dataSelect['status'] == 1 %}
+                                             <button type="button" style="margin-right: 10px" class="btn btn-primary" data-toggle="modal" data-target="#reaffectationVisite" data-whatever="{{ path ('reaffecterfiche',{'id':dataSelect['id']}) }},Réaffectation d'une visite">Réaffecter</button>
+                                         {% endif %}
+                                         <button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('validerfiche',{'id':dataSelect['id']}) }},Validation,valider,cette visite de contrôle">Valider</button>
+                                     </div>
+                                 {% endif %}
+                             </div>
+                             <br>
+                             {% set cp = 0 %}
+                             {% set tab=[] %}
+                             {% for sections in dataSelect['response']['sections'] %}
+                                 {% for sousSections in sections['sousSections'] %}
+                                     {% for paragraphes in sousSections['paragraphes'] %}
+
+{#                                         {{ dump(paragraphes['questions']) }}#}
+                                         {% if cp < paragraphes['questions']|length %}
+                                             {% set tab=[] %}
+                                             {% set cp = paragraphes['questions']|length %}
+                                             {% for question in paragraphes['questions'] %}
+                                                 {% set tab = tab|merge([question['label']]) %}
+                                             {% endfor %}
+                                         {% else %}
+                                             {% set cp = cp %}
+                                         {% endif %}
+                                     {% endfor %}
+                                 {% endfor %}
+                             {% endfor %}
+
+                             <table id="srollTable" class="table table-hover display">
+                                 <thead>
+                                 <tr>
+                                     <th rowspan="2">N</th>
+                                     <th class="text-center">Points de contrôles</th>
+                                     {% for i in 0..cp-1  %}
+                                         <th class="text-center">{{ tab[i] }}</th>
+                                     {% endfor %}
+                                 </tr>
+                                 <tr>
+                                     <th>
+                                         Nom de l'entité contrôlée : <span style="color: red">{{ dataSelect['pdv']['entiteControle'] }}</span><br>
+                                         Numéro puce PDV OM : <span style="color: red">{{ dataSelect['pdv']['numero_pdv'] }}</span>
+                                     </th>
+                                     <th>
+                                         Ville ou Commune : <span style="color: red">{{ dataSelect['pdv']['ville']['libelle'] }}</span><br>
+                                         Localisation précise : <span style="color: red">{{ dataSelect['pdv']['initialAdresse'] }}</span>
+                                     </th>
+                                     <th>
+                                         Nom Grossiste/Indépendant/ : <span style="color: red">{{ dataSelect['pdv']['type_pdv']['libelle'] }}</span><br>
+                                         Numéro tête de pont : <span style="color: red">{{ dataSelect['pdv']['numero_tete_pont'] }}</span>
+                                     </th>
+                                     {% for i in 0..cp-3 %}
+                                         <th></th>
+                                     {% endfor %}
+                                 </tr>
+                                 </thead>
+                                 <tbody>
+                                 {% set cpt = 1 %}
+                                 <tr>
+                                     <td style="font-weight: bold">0</td>
+                                     <td style="font-weight: bold" class="text-center">Points de contrôles</td>
+                                     {% for i in 0..cp-1  %}
+                                         <td style="font-weight: bold" class="text-center">{{ tab[i] }}</td>
+                                     {% endfor %}
+                                 </tr>
+                                 {% for sections in dataSelect['response']['sections'] %}
+                                     <tr style="background-color: red">
+                                         <td>{{ cpt }}</td>
+                                         <td>{{ sections['titre'] }}</td>
+                                         {% for i in 0..cp %}
+                                             <td></td>
+                                         {% endfor %}
+                                     </tr>
+                                     {% set nb=0 %}
+
+                                     {% for sousSections in sections['sousSections'] %}
+
+                                         {% for paragraphes in sousSections['paragraphes'] %}
+                                             {% set taille = paragraphes['questions']|length %}
+
+                                             {% if paragraphes['titre'] == "" %}
+                                                 <tr>
+                                                     <td>{{ cpt }}</td>
+                                                     <td>{{ sousSections['titre'] }}</td>
+                                                     {% if taille >= cp or paragraphes['questions'][0]['label'] != "Conformité" %}
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% else %}
+                                                         <td></td>
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% endif %}
+                                                 </tr>
+                                             {% else %}
+                                                 <tr>
+                                                     <td>{{ cpt }}</td>
+                                                     <td>{{ paragraphes['titre'] }}</td>
+                                                     {% if taille >= cp or paragraphes['questions'][0]['label'] != "Conformité" %}
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% else %}
+                                                         <td></td>
+                                                         {% for q in 0..cp-1 %}
+                                                             <td style="text-align: center">
+                                                                 {% if paragraphes['questions'][q] is defined %}
+                                                                     {{ paragraphes['questions'][q]['reponse'] }}
+                                                                 {% endif %}
+                                                             </td>
+                                                         {% endfor %}
+                                                     {% endif %}
+                                                 </tr>
+                                             {% endif %}
+
+                                         {% endfor %}
+
+                                     {% endfor %}
+                                     {% set cpt = cpt + 1 %}
+                                 {% endfor %}
+                                 </tbody>
+                                 <tfoot>
+                                 </tfoot>
+                             </table>
+                             <br><br>
+                             <div class="form-row">
+                                 <div class="col-sm-12">
+                                     <label style="color: red;font-weight: bold;">Observation : </label> {{ dataSelect['response']['observation_agt'] }}
+                                 </div>
+                             </div>
+                             <br><br>
+                             {% for image in images %}
+                                 <img alt="Image" src="{{ base_64_prefix }}{{image['base64_image']}}" data-toggle="tooltip" data-placement="top" title="{{ image['image_name'] }}" class="preview_document" style="width:18%; height: 200px" data-toggle="tooltip" data-placement="top" title=""/>
+                             {% endfor %}
+                         {% endif %}
+                     {% endif %}
+                 </div>
+
+                 <!-- fichier synthèse de la visite de contrôle éffectuée -->
+                 <div class="tab-pane fade {% if tab == "detailcontrole" %}show active{% endif %}" id="detailcontrole" role="tabpanel" aria-labelledby="detailcontrole-tab">
+                     {% if tab == "detailcontrole"  %}
+                         <table id="srollTable" class="table table-hover display">
+                             <thead>
+                             <tr>
+                                 <th class="text-center">Action</th>
+                                 <th class="text-center">Date du contrôle</th>
+                                 <th class="text-center">Contrôleur</th>
+                                 <th class="text-center">Type de PDV</th>
+                                 <th class="text-center">Nom Commercial</th>
+                                 <th class="text-center">Numéro TP</th>
+                                 <th class="text-center">Entité Contrôlé</th>
+                                 <th class="text-center">Nom du Gérant</th>
+                                 <th class="text-center">Contact du Gérant</th>
+                                 <th class="text-center">Contact du Responsable</th>
+                                 <th class="text-center">Numéro du PDV</th>
+                                 <th class="text-center">Ville</th>
+                                 <th class="text-center">Localisation</th>
+                                 <th class="text-center">Gravité</th>
+                                 <th class="text-center">Description du dysfonctionnements</th>
+                                 <th class="text-center">Action Ménée / à Ménée</th>
+                                 <th class="text-center">Porteur d'action</th>
+                                 <th class="text-center">Date début de l'action</th>
+                                 <th class="text-center">Date fin prévue</th>
+                                 <th class="text-center">Statut</th>
+                                 <th class="text-center">Observation</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                             {% for row in databd['content']|batch(1, 'No item') %}
+                                 <tr>
+                                     {% for data in row %}
+                                         <td class="text-center">{{ databd['typeVisite']['libelle']|upper }}</td>
+                                         <td class="text-center">{{ databd['date']|date("d/m/Y H:i:s") }}</td>
+                                         <td class="text-center">{{ databd['acteur']['nom_prenoms']|upper }}</td>
+                                         <td class="text-center">{% if databd['pdv']['type_pdv'] is defined %}{{ databd['pdv']['type_pdv']['libelle']|upper }} {% endif %}</td>
+                                         <td class="text-center">{{ databd['pdv']['nom_commercial']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['numero_tete_pont'] }}</td>
+                                         <td class="text-center">{{ databd['pdv']['entiteControle']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['nom_responsable']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['contact_responsable']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['contact_responsable']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['numero_pdv']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['ville']['libelle']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['addresse']|upper }}</td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if "Gravité" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if "Description" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if "Plan" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if "Responsable" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {{ databd['date']|date("d/m/Y H:i:s") }}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if "Date butoire" in question['label'] %}
+                                                         {{ question['reponse']|date("d/m/Y") }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if "Statut" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if "Observation" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                     {% endfor %}
+                                 </tr>
+                             {% endfor %}
+                             </tbody>
+                             <tfoot>
+                             </tfoot>
+                         </table>
+                     {% endif %}
+                 </div>
+
+                 <!-- fichier synthèse de la visite d'evaluation éffectuée -->
+                 <div class="tab-pane fade {% if tab == "detailefichevaluation" %}show active{% endif %}" id="detailefichevaluation" role="tabpanel" aria-labelledby="detailefichevaluation-tab">
+                     {% if tab == "detailefichevaluation"  %}
+                         <table id="srollTable" class="table table-hover display">
+                             <thead>
+                             <tr>
+                                 <th class="text-center">Action</th>
+                                 <th class="text-center">Date du contrôle</th>
+                                 <th class="text-center">Contrôleur</th>
+                                 <th class="text-center">Type de PDV</th>
+                                 <th class="text-center">Nom Commercial</th>
+                                 <th class="text-center">Numéro TP</th>
+                                 <th class="text-center">Entité Contrôlé</th>
+                                 <th class="text-center">Nom du Gérant</th>
+                                 <th class="text-center">Contact du Gérant</th>
+                                 <th class="text-center">Contact du Responsable</th>
+                                 <th class="text-center">Numéro du PDV</th>
+                                 <th class="text-center">Ville</th>
+                                 <th class="text-center">Localisation</th>
+                                 <th class="text-center">Gravité</th>
+                                 <th class="text-center">Description du dysfonctionnements</th>
+                                 <th class="text-center">Porteur d'action</th>
+                                 <th class="text-center">Décision</th>
+                                 <th class="text-center">Plan d'action</th>
+                                 <th class="text-center">Statut</th>
+                                 <th class="text-center">Date butoire</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                             {% for row in databd['content']|batch(1, 'No item') %}
+                                 <tr>
+                                     {% for data in row %}
+                                         <td class="text-center">{{ databd['typeVisite']['libelle']|upper }}</td>
+                                         <td class="text-center">{{ databd['date']|date("d/m/Y H:i:s") }}</td>
+                                         <td class="text-center">{{ databd['acteur']['nom_prenoms']|upper }}</td>
+                                         <td class="text-center">{% if databd['pdv']['type_pdv'] is defined %}{{ databd['pdv']['type_pdv']['libelle']|upper }} {% endif %}</td>
+                                         <td class="text-center">{{ databd['pdv']['nom_commercial']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['numero_tete_pont'] }}</td>
+                                         <td class="text-center">{{ databd['pdv']['entiteControle']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['nom_responsable']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['contact_responsable']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['contact_responsable']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['numero_pdv']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['ville']['libelle']|upper }}</td>
+                                         <td class="text-center">{{ databd['pdv']['addresse']|upper }}</td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if question['questionAdded'] != null and question['questionAdded'] == true and "Gravité" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if question['questionAdded'] != null and question['questionAdded'] == true and "Description" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if question['questionAdded'] != null and question['questionAdded'] == true and "Porteur" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if question['questionAdded'] != null and question['questionAdded'] == true and "Décision" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if question['questionAdded'] != null and question['questionAdded'] == true and "Plan" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if question['questionAdded'] != null and question['questionAdded'] == true and "Statut" in question['label'] %}
+                                                         {{ question['reponse']|upper }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                         <td class="text-center">
+                                             {% for reponse in data %}
+                                                 {% for question in reponse %}
+                                                     {% if question['questionAdded'] != null and question['questionAdded'] == true and "Date butoire" in question['label'] %}
+                                                         {{ question['reponse']|date("d/m/Y") }}
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             {% endfor %}
+                                         </td>
+                                     {% endfor %}
+                                 </tr>
+                             {% endfor %}
+                             </tbody>
+                             <tfoot>
+                             </tfoot>
+                         </table>
+                     {% endif %}
+                 </div>
+
+             </div>
+         </div>
+     </div>
+
+ {% endblock %}

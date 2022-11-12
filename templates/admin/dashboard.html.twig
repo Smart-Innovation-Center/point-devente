@@ -1,0 +1,153 @@
+{% extends 'base.html.twig' %}
+{% block body %}
+    {% include("includes/styleDash.html.twig") %}
+    <script>
+        $(document).ready(function () {
+
+            // $('#flasherror').hide();
+            $.ajax({
+                type: 'GET',
+                url: "{{ path('dashboardStats')}} ",
+                success:function(data) {
+                    datad = $.parseJSON(data)
+                    $('#acteurCount').html((datad.acteurCount).toLocaleString('en-US'))
+                    $('#pdvControlled').html((datad.pdvControlled).toLocaleString('en-US'))
+                    $('#pdvNotControlled').html((datad.pdvNotControlled).toLocaleString('en-US'))
+                    $('#pdvCount').html((datad.pdvCount).toLocaleString('en-US'))
+                    $('#visitValidatedCount').html((datad.visitValidatedCount).toLocaleString('en-US'))
+                    $('#visitNotValidatedCount').html((datad.visitNotValidatedCount).toLocaleString('en-US'))
+                    $('#evaluationDone').html((datad.evaluationDone).toLocaleString('en-US'))
+                    $('#supervisionDone').html((datad.supervisionDone).toLocaleString('en-US'))
+                    $('#visitWaiting').html((datad.visitWaiting).toLocaleString('en-US'))
+                    $('#visitesCount').html((datad.visitesCount).toLocaleString('en-US'))
+                },
+                error: function(error) {
+                    //alert("Une erreur est survenue impossible de charger les données !");
+                    setTimeout(()=>{
+                        $('#flasherror1').show().delay(3000).hide();
+                    },5000)
+
+                    //window.setTimeout("$('#flasherror').hide()",1000);
+                }
+            });
+        });
+    </script>
+
+    <div class="row fixed-right" id="flasherror1" style="display:none">
+        <div class="bg-dark p-3  flash-message">
+            <div class="alert alert-danger" role="alert">
+                <span class="alert-icon"><span class="sr-only">Danger</span></span>
+                <p>Une erreur est survenue impossible de charger les données !</p>
+            </div>
+        </div>
+    </div>
+    <nav role="navigation" aria-labelledby="breadcrumb-intro-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{path ('accueil')}}">Dashboard</a></li>
+        </ol>
+    </nav>
+    <div class="p-3 mb-2 bg-primary page-current">Dashboard</div>
+    <div class="col-lg-12" style="margin-top: 3%">
+        <section class="box nobox marginBottom0">
+            <div class="content-body">
+                <div class="row text-center">
+                    <div class="col-lg-3 col-sm-4 col-xs-12">
+                        <div class="r4_counter db_box">
+                            <div class="stats">
+                                <span>Nombre D'acteurs</span>
+                                <h3 class="mb-5" id="acteurCount"></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-sm-4 col-xs-12">
+                        <div class="r4_counter db_box">
+                            <div class="stats">
+                                <span>Nombre de PDV Controllés</span>
+                                <h3 class="mb-5" id="pdvControlled"></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-sm-4 col-xs-12">
+                        <div class="r4_counter db_box">
+                            <div class="stats">
+                                <span>Nombre de PDV non Controllés</span>
+                                <h3 class="mb-5" id="pdvNotControlled"></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-sm-4 col-xs-12">
+                        <div class="r4_counter db_box">
+                            <div class="stats">
+                                <span>Total PDV</span>
+                                <h3 class="mb-5" id="pdvCount"></h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row text-center">
+                    <div class="col-lg-3 col-sm-4 col-xs-12">
+                        <div class="r4_counter db_box">
+                            <div class="icon-after cc DASH-alt"></div>
+                            <i class='pull-left cc DASH-alt icon-md icon-primary mt-10'></i>
+                            <div class="stats">
+                                <span>Visites validées</span>
+                                <h3 class="mb-5" id="visitValidatedCount"></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-sm-4 col-xs-12">
+                        <div class="r4_counter db_box">
+                            <div class="icon-after cc DASH-alt"></div>
+                            <i class='pull-left cc DASH-alt icon-md icon-primary mt-10'></i>
+                            <div class="stats">
+                                <span>Visites invalidées</span>
+                                <h3 class="mb-5" id="visitNotValidatedCount"></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-sm-4 col-xs-12">
+                        <div class="r4_counter db_box">
+                            <div class="icon-after cc LTC-alt"></div>
+                            <i class='pull-left cc LTC-alt icon-md icon-primary mt-10'></i>
+                            <div class="stats">
+                                <span>Visites d'évaluation éffectuées</span>
+                                <h3 class="mb-5" id="evaluationDone"></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-sm-4 col-xs-12">
+                        <div class="r4_counter db_box">
+                            <div class="icon-after cc LTC-alt"></div>
+                            <i class='pull-left cc LTC-alt icon-md icon-primary mt-10'></i>
+                            <div class="stats">
+                                <span>Visites de supervision éffectuées</span>
+                                <h3 class="mb-5" id="supervisionDone"></h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row text-center justify-content-center">
+                    <div class="col-lg-3 col-sm-4 col-xs-12">
+                        <div class="r4_counter db_box has-gradient-to-right-bottom">
+                            <div class="stats">
+                                <span>Visites éffectués en attente</span>
+                                <h3 class="mb-5" id="visitWaiting"></h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-sm-4 col-xs-12">
+                        <div class="r4_counter db_box has-gradient-to-right-bottom">
+                            <div class="stats">
+                                <span>Toutes les visites éffectués</span>
+                                <h3 class="mb-5" id="visitesCount"></h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="clearfix"></div>
+
+{% endblock %}

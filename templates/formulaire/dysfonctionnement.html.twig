@@ -1,0 +1,258 @@
+
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+
+     <style>
+         .btn-link:hover , a:hover {
+             color: #f16e00;
+             text-decoration: none !important;
+         }
+
+         .btn-link , a{text-decoration: none !important;}
+         .dropdown-item:focus {
+             color: inherit;
+             text-decoration: none;
+             background-color: inherit;
+         }
+         label.custom-control-label small {
+             position: relative;
+             top: -8px;
+         }
+         .question_item3 , .paragraph_item3{
+             margin-bottom: 10px;
+         }
+         .text-danger{color:red;}
+
+         .opener{
+             font-size: 25px;
+             padding-right: 5px;
+             padding-left: 5px;
+         }
+     </style>
+     <nav role="navigation" aria-labelledby="breadcrumb-intro-3">
+         <ol class="breadcrumb">
+             <li class="breadcrumb-item"><a href="">Gestion des Formulaires</a></li>
+             <li class="breadcrumb-item"><a href="{{path ('dysfonctionnement')}}">Dysfonctionnements</a></li>
+             <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{tab}}</li>
+         </ol>
+     </nav>
+     <div class="p-3 mb-2 bg-primary page-current">PARAMETRAGE DES DYSFONCTIONNEMENTS</div>
+     <div class="main-content container-fluid">
+         <div class="page-title">
+             <ul class="nav nav-tabs" id="myTab" role="tablist">
+                 <li class="nav-item2" role="presentation">
+                     <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('dysfonctionnement')}}">Liste des dysfonctionnements</a>
+                 </li>
+                 <li class="nav-item2" role="presentation">
+                     <a class="nav-link {% if tab is same as( 'ajouter' ) %} active{% endif %}" href="{{path ('adddysfonctionnement')}}">ajouter un dysfonctionnement</a>
+                 </li>
+                 {% if dataSelect is defined  %}
+                     <li class="nav-item2" role="presentation" style="display:{% if tab == "modifier" %}block {% else %}none{% endif %}">
+                         <a class="nav-link {% if tab is same as( 'modifier' ) %} active{% endif %}" href="{{path ('editdysfonctionnement',{'id':dataSelect['id']})}}">Modifier un dysfonctionnement</a>
+                     </li>
+                 {% endif %}
+             </ul>
+             <div class="tab-content" id="myTabContent">
+                 <!-- Liste des formulaires  -->
+                 <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                     {% if databd is defined  %}
+                         <table id="table" class="table table-hover display">
+                             <thead>
+                             <tr>
+                                 <th class="text-center">Code</th>
+                                 <th class="text-center">Dysfonctionnement</th>
+                                 <th class="text-center">Action</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                                 {% for row in databd|batch(1, 'No item') %}
+                                     <tr>
+                                         {% for data in row %}
+                                             <td class="text-center">{{ data['code'] }}</td>
+                                             <td class="text-center">{{ data['dysfonctionnement'] }}</td>
+                                             <td class="text-center">
+                                                 <div class="dropdown">
+                                                     <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                         Action
+                                                     </button>
+                                                     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                                         <a class="dropdown-item" href="{{ path ('editdysfonctionnement',{'id':data['id']}) }}">Modifier</a>
+                                                         <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('deldysfonctionnement',{'id':data['id']}) }},Suppression,supprimer,ce dysfonctionnement : {{data['dysfonctionnement'] }}">Supprimer</button>
+
+                                                     </div>
+                                                 </div>
+                                             </td>
+                                         {% endfor %}
+                                     </tr>
+                                 {% endfor %}
+                             </tbody>
+                             <tfoot>
+                             </tfoot>
+                         </table>
+                    
+                     {% endif %}
+                 </div>
+                 <!-- ajouter un formulaire  -->
+                 <div class="tab-pane fade {% if tab == "ajouter" %}show active{% endif %}" id="ajouter" role="tabpanel" aria-labelledby="ajouter-tab">
+                     {% if tab == "ajouter"  %}
+
+                         <div class="question_form_container">
+                             <form id="formulaire3" action="{{ path('adddysfonctionnement') }}" method="post">
+                               
+                                 <div class="form-row">
+                                     <div class="col-sm-6">
+                                         <label>Ouvrir/Fermer</label>
+                                     </div>
+                                     <div class="col-sm-6 text-right">
+                                         <label class="mr-5">Action</label>
+                                     </div>
+                                 </div>
+
+                                 <div class="paragraph_item3">
+                                    <div id="paragraph_3" class="card paragraph_item3" data-children=".item">
+                                        <div class="card-header card-header-primary ">
+                                            <div class="form-row">
+                                                <a data-toggle="collapse" data-parent="#paragraph_3" href="#sub_accordion_para_3" class="collapsed icon-arrow-down col-sm-1 opener text-center mt-2"></a>
+                                                <div class="col-sm-2">
+                                                    <label>Code : </label><input type="text" name="form_title3" id="form_title3" placeholder="code" class="form-control">
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <label>Titre du Paragraphe : </label><input type="text" name="titre_pg" id="titre_pg3" placeholder="titre du Paragraphe" class="form-control">
+                                                </div>
+                                                <div class="col-sm-3 text-right">
+                                                    <div class="btn-group">
+                                                        <button class="btn add_question3" data-id="3" data-toggle="tooltip" data-placement="top" title="Ajouter une Question" type="button"><i class="icon-add-more"></i></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="item">
+                                            <div id="sub_accordion_para_3" class="collapse" role="tabpanel">
+                                                <div class="card-body paragraph_content3 form-row">
+
+                                                    <div class="col-sm-4 question_item3" id="question_item_3">
+                                                        <div class="card">
+                                                            <div class="card-header card-header-primary">
+                                                                <div class="form-row">
+                                                                    <div class="col-sm-12">
+                                                                        <span>Question 1</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="card-body">
+                                                                <div class="form-group">
+                                                                    <div class="form-row border-bottom">
+                                                                        <div class="col-sm-6">
+                                                                            <label>Mandatory</label>
+                                                                        </div>
+                                                                        <div class="col-sm-2">
+                                                                            <div class="custom-control custom-radio">
+                                                                                <input class="custom-control-input" type="radio" name="mandatory_3" value="oui" data-question_id="3" id="mandatory_oui_3" checked>
+                                                                                <label class="custom-control-label" for="mandatory_oui_3"><small>Oui</small></label>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="col-sm-2">
+                                                                            <div class="custom-control custom-radio">
+                                                                                <input class="custom-control-input" type="radio" name="mandatory_3" value="non" data-question_id="3" id="mandatory_non_3">
+                                                                                <label class="custom-control-label" for="mandatory_non_3"><small>Non</small></label>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="form-row select_type_3">
+                                                                        <div class="col-sm-12">
+                                                                            <div class="type_item type_champ_select_indicator" id="type_champ_select_3" data-question_id="3" data-textarea-cible="#question_textarea_3">
+
+                                                                                <div class="form-group">
+                                                                                    <label>Nom de la question</label>
+                                                                                    <input type="text" class="form-control" name="nom_question" required>
+                                                                                </div>
+
+                                                                                <div class="form-group">
+                                                                                    <label>Réponse à la question</label>
+                                                                                    <input type="text" class="form-control" name="reponse_question" >
+                                                                                </div>
+                                                                                <div class="form-group">
+                                                                                    <label class="">Type du champ</label>
+                                                                                    <select name="type_question" class="custom-select typequestion3" >
+                                                                                        <option value="">Sélectionner un type</option>
+                                                                                        {% for colonne in typechamp %}
+                                                                                            <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                                                                                        {% endfor %}
+                                                                                    </select>
+
+                                                                                    <div class="mt-3" id="question_textarea_3" style="display: none">
+                                                                                        <textarea name="liste_option" rows="5" class="form-control" placeholder="Renseigner les differentes options ici, séparées de point virgules(;)"></textarea>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                 </div>
+
+                                 <textarea name="form_json" style="display: none" id="form_json_container3"></textarea>
+
+                                 <div class="form-row">
+                                     <div class="col-sm-12">
+                                         <button type="button" id="submit_form_btn3" class="btn btn-primary float-right">Enregistrer</button>
+                                     </div>
+                                 </div>
+
+                             </form>
+                         </div>
+
+                     {% endif %}
+                 </div>
+                 <!-- modifier un formulaire  -->
+                 <div class="tab-pane fade {% if tab == "modifier" %}show active{% endif %}" id="modifier" role="tabpanel" aria-labelledby="modifier-tab">
+                     {% if dataSelect is defined  %}
+                         <div class="question_form_container3" id="load_data">
+                                 <form id="formulaire3" action="{{ path('editdysfonctionnement',{'id':dataSelect['id']}) }}" method="post">
+                                     <div class="form-row">
+                                         <div class="col-sm-6">
+                                             <label>Ouvrir/Fermer</label>
+                                         </div>
+                                         <div class="col-sm-6 text-right">
+                                             <label class="mr-5">Action</label>
+                                         </div>
+                                     </div>
+
+                                     <div class="paragraph_item3"></div>
+
+                                     <textarea name="form_json" style="display: none" id="form_json_container3"></textarea>
+
+                                     <div class="form-row">
+                                         <div class="col-sm-12">
+                                             <button type="button" id="submit_form_btn3" class="btn btn-primary float-right">Enregistrer</button>
+                                         </div>
+                                     </div>
+
+                                 </form>
+
+                         </div>
+
+                     {% endif %}
+                 </div>
+
+                 <div style="display: none">
+                     <div class="type_champ_select_tag">
+                         <select name="type_question" class="custom-select typequestion3">
+                             <option value="">Sélectionner un type</option>
+                             {% for colonne in typechamp %}
+                                 <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                             {% endfor %}
+                         </select>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     </div>
+ {% endblock %}

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}Orange CI Admin Dashboard{% endblock %}</title>
+        {% block stylesheets %}
+            {% include("includes/cssFiles.html.twig") %}
+        {% endblock %}
+
+    </head>
+    <body>
+        {% include("includes/nav.html.twig") %} 
+        <div id="body">
+            {% include("includes/sidebar.html.twig") %}
+            <main role="main" class="col-lg-10 col-md-9 ml-sm-auto px-md-4" style="padding:5px">
+                {% include("includes/flash.html.twig") %}
+                {% block body %} {% endblock %}
+            </main>
+        </div>
+        {% block javascripts %}
+            {% include("includes/jsFiles.html.twig") %}
+        {% endblock %}
+    </body>
+</html>

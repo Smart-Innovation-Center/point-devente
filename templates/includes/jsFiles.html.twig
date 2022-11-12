@@ -1,0 +1,2049 @@
+
+<script src="{{ asset ('assets/js/jquery-3.5.1.js')}}"></script>
+
+    <script type="text/javascript" src="{{ asset ('assets/js/sol.js')}}"></script>
+    <script src="{{ asset ('assets/js/jquery.dataTables.min.js')}}"></script>
+    <script src="{{ asset ('assets/js/dataTables.select.min.js')}}"></script>
+    <script src="{{ asset ('assets/js/boosted.bundle.js')}}"></script>
+        {# librairie d'exportattion du tableau #}
+
+    <script src="{{ asset ('assets/js/dataTables.buttons.min.js')}}"></script>
+
+    <script src="{{ asset ('assets/js/jszip.min.js')}}"></script>
+    <script src="{{ asset ('assets/js/pdfmake.min.js')}}"></script>
+    <script src="{{ asset ('assets/js/vfs_fonts.js')}}"></script>
+    <script src="{{ asset ('assets/js/buttons.html5.min.js')}}"></script>
+    <script src="{{ asset ('assets/js/buttons.print.min.js')}}"></script>
+    <script src="{{ asset ('assets/js/buttons.colVis.min.js')}}"></script>
+        {# librairie du formulaire  #}
+    <script src="{{ asset ('assets/js/formulaire.js')}}"></script>
+    <script src="{{ asset ('assets/js/tooltip/popper.min.js')}}"></script>
+    <script src="{{ asset ('assets/js/tooltip/custom.min.js')}}"></script>
+    <script src="{{ asset ('assets/js/sweetalert2/dist/sweetalert2.all.js')}}"></script>
+    <script src="{{ asset ('assets/js/dp.min.js')}}"></script>
+        {# librairie map #}
+    <script src="{{ asset ('assets/js/leaflet.js')}}"></script>
+<script>
+
+    //Timeout flash message        
+    {% if app.session.get('flash') %}  
+        Idflash='{{ app.session.get('flash') }}';
+        {{ app.session.set('flash',null) }}//vider la variable de session
+        {{ app.session.set('response',null) }}//vider la variable de session response
+        window.setTimeout("document.getElementById(Idflash).style.display='none'",3000);
+    {% endif %}  
+
+    {% if app.session.get('flashConnect') %}
+        $('#staticBackdrop').modal('show');
+        {{ app.session.set('flashConnect',null) }}
+    {% endif  %}
+
+    //margin top du header
+    var y = $("#navhead").height();
+    $("#body").css("margin-top", y);
+
+    //gmap PDV
+    {% if databdmap is defined  %}
+
+
+        const map_url = 'http://10.242.79.244/osm/{z}/{x}/{y}.png';
+
+    var lat = 5.361433136212524;
+    var lon = -4.014054601394082;
+    var macarte = null;
+
+        var villes = {
+            {% for pdv in databdmap %}
+                {% if pdv['nom_commercial'] is not null and pdv['latitude'] is not null and pdv['logitude'] is not null %}
+                    "{{ pdv['nom_commercial'] }}": { "lat": {{ pdv['latitude'] }}, "lon": {{ pdv['logitude'] }} },
+                {% endif  %}
+            {% endfor  %}
+        };
+
+    function initMap() {
+        macarte = L.map('map').setView([lat, lon], 13);
+
+        L.tileLayer(map_url, {
+            attribution: '© OCI Map'
+        }).addTo(macarte);
+
+        for (ville in villes) {
+            var marker = L.marker([villes[ville].lat, villes[ville].lon]).addTo(macarte);
+            marker.bindPopup(ville);
+        }
+
+    }
+
+        window.onload = function(){
+            initMap();
+        };
+    {% endif %}
+
+    //fonction de recherche de la reponse
+    function reponse_question(question_id , html_tag) {
+        for(var l = 0 ; l< form_json_js.length ; l++){
+            const question = form_json_js[l];
+            if(Number(''+question_id+'') === Number(''+question.question_id+'')){
+                $(html_tag).html(question.response);
+                break;
+            }
+        }
+    }
+
+    //traitement sur la multi selection
+    $(function() { 
+        // initialize sol
+        {% if action is defined  %}  
+            $('.action').searchableOptionList({
+                maxHeight: '350px',
+                showSelectAll: true,
+                texts: {
+                    noItemsAvailable: 'Aucun recherche trouvée',
+                    selectAll: 'Sélectionner tous',
+                    selectNone: 'Désélectionner tous',
+                    quickDelete: '&times;',
+                    searchplaceholder: 'Rechercher ici...'
+                },
+
+                data: [
+                        {% for colonne in action %}
+                            { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}"},
+                        {% endfor %}
+                ]
+
+            });  
+        {% endif %}
+
+        {% if role is defined  %}    
+            $('.role').searchableOptionList({
+                maxHeight: '350px',
+                showSelectAll: true,
+                texts: {
+                    noItemsAvailable: 'Aucun recherche trouvée',
+                    selectAll: 'Sélectionner tous',
+                    selectNone: 'Désélectionner tous',
+                    quickDelete: '&times;',
+                    searchplaceholder: 'Rechercher ici...'
+                },        
+                data:
+                    [
+                        {% for colonne in role %}
+                        {% if colonne['activated'] %}
+                            { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['role']}}"},
+                        {% endif %}
+                        {% endfor %}
+                    ]
+
+            });
+        {% endif %}  
+
+        {% if typepdv is defined  %}    
+            $('.typepdv').searchableOptionList({
+                maxHeight: '350px',
+                showSelectAll: true,
+                texts: {
+                    noItemsAvailable: 'Aucun recherche trouvée',
+                    selectAll: 'Sélectionner tous',
+                    selectNone: 'Désélectionner tous',
+                    quickDelete: '&times;',
+                    searchplaceholder: 'Rechercher ici...'
+                },        
+                data:
+                    [
+                        {% for colonne in typepdv %}
+                            {% if colonne['actived'] %}
+                                { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}"},
+                            {% endif %}
+                        {% endfor %}
+                    ]
+
+            });
+        {% endif %}
+
+        {% if typeacteur is defined  %}
+            $('.typeacteur').searchableOptionList({
+                maxHeight: '350px',
+                showSelectAll: true,
+                texts: {
+                    noItemsAvailable: 'Aucun recherche trouvée',
+                    selectAll: 'Sélectionner tous',
+                    selectNone: 'Désélectionner tous',
+                    quickDelete: '&times;',
+                    searchplaceholder: 'Rechercher ici...'
+                },
+                data:
+                    [
+                        {% for colonne in typeacteur %}
+                            {% if colonne['actived'] %}
+                                { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}"},
+                            {% endif %}
+                        {% endfor %}
+                    ]
+
+            });
+        {% endif %}
+
+
+{#   Nouvelle ajout reaffectation de visite administration      #}
+
+        {% if tab is defined and tab is same as('detailadministration')  %}
+        $('.acteur').searchableOptionList({
+            maxHeight: '350px',
+            showSelectAll: true,
+            texts: {
+                noItemsAvailable: 'Aucun recherche trouvée',
+                selectAll: 'Sélectionner tous',
+                selectNone: 'Désélectionner tous',
+                quickDelete: '&times;',
+                searchplaceholder: 'Rechercher ici...'
+            },
+            data:
+                [
+                    {% for colonne in acteur['content'] %}
+                    {% if colonne['actived'] %}
+                    { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['nom_prenoms']}}  { {% if colonne['type_acteur'] is not null %} {{colonne['type_acteur']}} {% endif %} }"},
+                    {% endif %}
+                    {% endfor %}
+                ]
+
+        });
+        {% endif %}
+
+        {#   Nouvelle ajout reaffectation de visite administration      #}
+
+
+        {% if tab is defined and tab is same as('detail')  %}
+            $('.acteur').searchableOptionList({
+                maxHeight: '350px',
+                showSelectAll: true,
+                texts: {
+                    noItemsAvailable: 'Aucun recherche trouvée',
+                    selectAll: 'Sélectionner tous',
+                    selectNone: 'Désélectionner tous',
+                    quickDelete: '&times;',
+                    searchplaceholder: 'Rechercher ici...'
+                },
+                data:
+                    [
+                        {% for colonne in acteur['content'] %}
+                            {% if colonne['actived'] %}
+                                { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['nom_prenoms']}}  { {% if colonne['type_acteur'] is not null %} {{colonne['type_acteur']}} {% endif %} }"},
+                            {% endif %}
+                        {% endfor %}
+                    ]
+
+            });
+        {% endif %}      
+
+        //feuille de route kanel
+        {% if tab is defined and tab is same as('fiche')  %}
+            $(document).on('change','#typepdv',{passive:true},function () {
+                var solData = [];
+
+                $('.pdv').searchableOptionList({
+                    maxHeight: '350px',
+                    showSelectAll: true,
+                    texts: {
+                        noItemsAvailable: 'Aucun recherche trouvée',
+                        selectAll: 'Sélectionner tous',
+                        selectNone: 'Désélectionner tous',
+                        quickDelete: '&times;',
+                        searchplaceholder: 'Rechercher ici...'
+                    },
+                    data:function () {
+                            var url = getData();
+                            var form_data = {};
+
+                            $.ajax({
+                                method: "GET",
+                                url: url,
+                                success: function(data){
+                                    form_data  = $.parseJSON(data);
+                                    for(var x = 0 ; x<form_data.length; x++) {
+                                        if(form_data[x]['actived']){
+                                            solData.push({ "type": "option", "value": form_data[x]['id'],  "label": form_data[x]['nom_commercial']},);
+                                        }
+                                    }
+                                }
+                            });
+                //console.log(solData);
+                            
+                          //  return solData;
+                    },
+                    solData
+
+                });
+            });
+
+        {% endif %}   
+
+        //liste des actions selectionnée a la creation    
+        {% if dataSelect['permissions'] is defined  %}
+            $('#actionliste').searchableOptionList({
+                maxHeight: '350px',
+                showSelectAll: true,
+                texts: {
+                    noItemsAvailable: 'Aucun recherche trouvée',
+                    selectAll: 'Sélectionner tous',
+                    selectNone: 'Désélectionner tous',
+                    quickDelete: '&times;',
+                    searchplaceholder: 'Rechercher ici...'
+                },
+
+                data:
+                    [
+                        {% if dataSelect['permissions'] is not null %}
+                            {% for colonne in action %}
+                                { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}" {% for data in dataSelect['permissions'] %}{% if colonne['id'] == data['id']  %} ,"selected": true {% endif %}{% endfor %} },
+                            {% endfor %}
+                        {% else %}
+                            {% for colonne in action %}
+                                { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}" },
+                            {% endfor %}
+                        {% endif %}
+                    ]
+            });
+        {% endif %}
+
+        {% if dataSelect['roles'] is defined  %} 
+            $('#roleliste').searchableOptionList({
+                maxHeight: '350px',
+                showSelectAll: true,
+                texts: {
+                    noItemsAvailable: 'Aucun recherche trouvée',
+                    selectAll: 'Sélectionner tous',
+                    selectNone: 'Désélectionner tous',
+                    quickDelete: '&times;',
+                    searchplaceholder: 'Rechercher ici...'
+                },   
+                    
+                data:
+                    [                              
+                        {% if dataSelect['roles'] is not null %}
+                            {% for colonne in role %}
+                                {% if colonne['activated'] %}
+                                    { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['role']}}" {% for data in dataSelect['roles'] %}{% if colonne['id'] == data['id']  %} ,"selected": true {% endif %}{% endfor %} },
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                        {% for colonne in role %}     
+                            {% if colonne['activated'] %}
+                            { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['role']}}"},
+                            {% endif %}
+                        {% endfor %}
+                        {% endif %} 
+                    ]
+
+            });
+        {% endif %}
+
+        {% if dataSelect['typeActeurs'] is defined  %}
+            $('#typeacteur').searchableOptionList({
+                maxHeight: '350px',
+                showSelectAll: true,
+                texts: {
+                    noItemsAvailable: 'Aucun recherche trouvée',
+                    selectAll: 'Sélectionner tous',
+                    selectNone: 'Désélectionner tous',
+                    quickDelete: '&times;',
+                    searchplaceholder: 'Rechercher ici...'
+                },
+
+                data:
+                    [
+                        {% if dataSelect['typeActeurs'] is not null %}
+                            {% for colonne in typeacteur %}
+                                {% if colonne['actived'] %}
+                                    { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}" {% for data in dataSelect['typeActeurs'] %}{% if colonne['id'] == data['id']  %} ,"selected": true {% endif %}{% endfor %} },
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {% for colonne in typeacteur %}
+                                {% if colonne['actived'] %}
+                                    { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}"},
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    ]
+
+            });
+        {% endif %}
+
+        {% if dataSelect['type_pdvs'] is defined  %} 
+            $('#typepdv').searchableOptionList({
+                maxHeight: '350px',
+                showSelectAll: true,
+                texts: {
+                    noItemsAvailable: 'Aucun recherche trouvée',
+                    selectAll: 'Sélectionner tous',
+                    selectNone: 'Désélectionner tous',
+                    quickDelete: '&times;',
+                    searchplaceholder: 'Rechercher ici...'
+                },   
+                    
+                data:
+                    [
+                        {% if dataSelect['type_pdvs'] is not null %}
+                            {% for colonne in typepdv %}
+                                {% if colonne['actived'] %}
+                                    { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}" {% for data in dataSelect['type_pdvs'] %}{% if colonne['id'] == data['id']  %} ,"selected": true {% endif %}{% endfor %} },
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {% for colonne in typepdv %}
+                                {% if colonne['actived'] %}
+                                    { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}"},
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    ]
+
+            });
+        {% endif %}
+
+        {% if dataSelect['entiteControle'] is defined  %}
+            $('#type_acteur').searchableOptionList({
+                maxHeight: '350px',
+                showSelectAll: true,
+                texts: {
+                    noItemsAvailable: 'Aucun recherche trouvée',
+                    selectAll: 'Sélectionner tous',
+                    selectNone: 'Désélectionner tous',
+                    quickDelete: '&times;',
+                    searchplaceholder: 'Rechercher ici...'
+                },
+
+                data:
+                    [
+                        {% if dataSelect['type_acteur'] is not null %}
+                            {% for colonne in typeacteur %}
+                                {% if colonne['actived'] %}
+                                    { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}" {% for data in dataSelect['type_acteur'] %}{% if colonne['id'] == data['id']  %} ,"selected": true {% endif %}{% endfor %} },
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {% for colonne in typeacteur %}
+                                {% if colonne['actived'] %}
+                                    { "type": "option", "value": "{{colonne['id']}}",  "label": "{{colonne['libelle']|upper}}"},
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    ]
+
+            });
+        {% endif %}
+    });
+
+
+    function getData(){
+
+            var typepdv = $('#typepdv').val();
+            var partenaire = $('#partenaire').val();
+            var donnees = $('#donnees').val();
+            var data = "nom_commercial=&nom_responsable=&typePdv="+typepdv+"&partenaire="+partenaire+"&ville="+donnees+"";
+
+
+            var url = '{{ path("getSearchPdv", {'id': 'article_id'}) }}';
+            url = url.replace("article_id", data);
+            
+        /* var pdv = $('#pdv').val();
+        var datedebut = $('#datedebut').val();
+        var datefin = $('#datefin').val();
+        var cases = document.getElementsByName('type_operration');
+
+        if( pdv.replace(/\s+/, '').length ) {
+            recherche=recherche+'&retailer='+pdv;
+        }
+        if( datedebut.replace(/\s+/, '').length ) {
+            recherche=recherche+'&startDate='+datedebut;
+        }
+        if( datefin.replace(/\s+/, '').length ) {
+            recherche=recherche+'&endDate='+datefin;
+        }*/
+
+        return url;
+
+    }
+
+    //charger les responsable hierarchique en fonction du type controleur
+    function listeActeurs(responsable_id) {
+        //on prend le reponsable_id en parametre ou bine la valeur par defaut est vide;
+        responsable_id = responsable_id || '';
+
+        var select = document.querySelector(".listeActeur");
+        choice = select.selectedIndex  // Récupération de l'index du <option> choisi
+        idActeur = select.options[choice].value; // Récupération du texte du <option> d'index "choice"
+        $("#typeacteurSelect").val($(select.options[choice]).attr('data-typeselect'));
+
+        var form_data = {};
+        if (idActeur!=""){
+            $.ajax({
+                method: "GET",
+                url: idActeur,
+                success: function(data){
+                    form_data  = $.parseJSON(data);
+                    $('#responsableH').empty();
+                    $('#responsableH').append("<option value=''>Sélectionner un acteur</option>");
+                    for(var x = 0 ; x<form_data.length; x++) {
+                        $("#responsableH").append("<option value='" + form_data[x]['id'] + "' "+((responsable_id == form_data[x]['id'] )?'selected':'')+" >" + form_data[x]['nom_prenoms'].toUpperCase() +" {"+ form_data[x]['type_acteur']['libelle'].toUpperCase() +"}"+ "</option>");
+                    }
+
+                }
+            });
+        }else {
+            $('#responsableH').empty();
+            $('#responsableH').append("<option value=''>Sélectionner un acteur</option>");
+        }
+    }
+
+    //charger les ville en fonction de la region
+    function listeVilles(region_id) {
+
+        region_id = region_id || '';
+
+        var select = document.querySelector(".listeVille");
+        choice = select.selectedIndex  // Récupération de l'index du <option> choisi
+        idRegion = select.options[choice].value; // Récupération du texte du <option> d'index "choice"
+
+        var form_data = {};
+        if (idRegion!=""){
+            $.ajax({
+                method: "GET",
+                url: idRegion,
+                success: function(data){
+                    form_data  = $.parseJSON(data);
+                    $('#donnees').empty();
+                    $('#donnees').append("<option value=''>Choisir une ville</option>");
+                    for(var x = 0 ; x<form_data.length; x++) {
+                        $("#donnees").append("<option value='" + form_data[x]['id'] + "' "+((region_id == form_data[x]['id'])?'selected':'')+">" + form_data[x]['libelle'].toUpperCase() + "</option>");
+                    }
+                }
+            });
+        }else {
+            $('#donnees').empty();
+            $('#donnees').append("<option value=''>Choisir une ville</option>");
+        }
+    }
+
+    //charger les responsable hierarchique en fonction du type controleur
+    function listeControleActeur() {
+        //on prend le reponsable_id en parametre ou bine la valeur par defaut est vide;
+        var select = document.querySelector(".listeControleActeur");
+        choice = select.selectedIndex  // Récupération de l'index du <option> choisi
+        idActeur = select.options[choice].value; // Récupération du texte du <option> d'index "choice"
+        
+        var form_data = {};
+        if (idActeur!=""){
+            $.ajax({
+                method: "GET",
+                url: idActeur,
+                success: function(data){
+                    form_data  = $.parseJSON(data);
+                    $('#typeacteurSelect').empty();
+                    $('#typeacteurSelect').append("<option value=''>Sélectionner un acteur</option>");
+                    for(var x = 0 ; x<form_data.length; x++) {
+                        $("#typeacteurSelect").append("<option value='" + form_data[x]['id'] + "' >" + form_data[x]['nom_prenoms'].toUpperCase() +" {"+ form_data[x]['type_acteur']['libelle'].toUpperCase() +"}"+ "</option>");
+                    }
+                }
+            });
+        }else {
+            $('#typeacteurSelect').empty();
+            $('#typeacteurSelect').append("<option value=''>Sélectionner un acteur</option>");
+        }
+    }
+
+    //charger les contrôleur en fonction du type controleur et du partenaire
+    function listeacteursPartenaire() {
+        //on prend le reponsable_id en parametre ou bine la valeur par defaut est vide;
+        var select = document.querySelector(".listeacteursPartenaire");
+        choice = select.selectedIndex  // Récupération de l'index du <option> choisi
+        idType = select.options[choice].value; // Récupération du texte du <option> d'index "choice"
+
+        var partenaire = $('#partenaire').val();
+        var data = "nom_prenoms=&contact=&email=&typeActeur="+idType+"&actived=";
+
+                //var route1 = '{{path ("editacteur",{"id":"xxx"})}}'.replace('xxx',''+id+'');
+
+        var route = '{{ path("listePartenaireacteurs", {"id": "xxx"}) }}'.replace('xxx', ''+data+'');
+        //url = url.replace("article_id", data);
+        //console.log(route1);
+        var form_data = {};
+        if (idType!=""){
+            $.ajax({
+                method: "GET",
+                url: route,
+                success: function(data){
+                    form_data  = $.parseJSON(data);
+                    $('#typeacteurActeurSelect').empty();
+                    $('#typeacteurActeurSelect').append("<option value=''>Sélectionner un acteur</option>");
+                    for(var x = 0 ; x<form_data.length; x++) {
+                        $("#typeacteurActeurSelect").append("<option value='" + form_data[x]['id'] + "' >" + form_data[x]['nom_prenoms'].toUpperCase() +" {"+ form_data[x]['type_acteur'].toUpperCase() +"}"+ "</option>");
+                    }
+                }
+            });
+        }else {
+            $('#typeacteurActeurSelect').empty();
+            $('#typeacteurActeurSelect').append("<option value=''>Sélectionner un acteur</option>");
+        }
+    }
+    
+    //recuperation du type de la question selectionner
+    function change_valeur() {
+        var select = document.querySelector(".typequestion");
+        choice = select.selectedIndex  // Récupération de l'index du <option> choisi
+
+        valeur_cherchee = select.options[choice].value; // Récupération du texte du <option> d'index "choice"
+        if (valeur_cherchee =="select" || valeur_cherchee =="checkbox" || valeur_cherchee =="radio") {
+            document.getElementById("plusoption").style.display='block';
+        }else {
+            document.getElementById("plusoption").style.display='none';
+        }
+    }
+        var selected = [];
+        var selected1 = [];
+        var selected2 = [];
+
+    $(document).ready(function () {
+
+        $('.majuscule').attr('onkeyup','this.value=this.value.toUpperCase()');
+        $('textarea').attr('onkeyup','this.value=this.value.toUpperCase()');
+        $('form').attr('autocomplete','off');
+
+        //appel du modal de suppression,activation,désactivation,réinitialisation
+        $('#confirmeAction').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget) ;
+            var recipient = button.data('whatever') ; //recuperation des données a afficher dans le modal
+            var donnee = recipient.split(','); //recuperation de chaque element
+
+            var modal = $(this);
+            modal.find('.modal-body form').attr('action',donnee[0]); //ajoute du path de validation
+            modal.find('.modal-title').text(donnee[1]); //ajout du titre du modal
+            modal.find('.modal-body p').text('Voulez-vous '+donnee[2]+' '+donnee[3]+' ?'); //ajout du message
+        });
+
+        //appel du modal de suppression,activation,désactivation,réinitialisation
+        $('#invalidationVisite').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget) ;
+            var recipient = button.data('whatever') ; //recuperation des données a afficher dans le modal
+            var donnee = recipient.split(','); //recuperation de chaque element
+
+            var modal = $(this);
+            modal.find('.modal-body form').attr('action',donnee[0]); //ajoute du path de validation
+            modal.find('.modal-title').text(donnee[1]); //ajout du titre du modal
+        });
+
+        //appel du modal de réaffectation d'une visite de contrôle
+        $('#reaffectationVisite').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget) ;
+            var recipient = button.data('whatever') ; //recuperation des données a afficher dans le modal
+            var donnee = recipient.split(','); //recuperation de chaque element
+
+            var modal = $(this);
+            modal.find('.modal-body form').attr('action',donnee[0]); //ajoute du path de validation
+            modal.find('.modal-title').text(donnee[1]); //ajout du titre du modal
+        });
+
+        //appliquer la librairie dataTable sur le tableau de la page actuelle ainsi que les different bouton de telechargement
+        {% if app.session.get('manager') is null %}
+            if ($('#srollTable').length){
+                pdf = {
+                    extend: 'pdfHtml5',
+                    exportOptions: {
+                        columns: ':visible'
+                    },
+                    orientation: 'landscape',
+                    pageSize: 'TABLOID'
+                }
+            }else {
+                pdf = {
+                    extend: 'pdf',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                }
+            }
+            bouton= [
+                {
+                    extend: 'copy',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'csv',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                {
+                    extend: 'excel',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                pdf,
+                {
+                    extend: 'print',
+                    exportOptions: {
+                        columns: ':visible'
+                    }
+                },
+                'colvis'
+            ];
+        {% else %}
+            bouton=[];
+        {% endif %}
+
+        var srolleTable = $('#srollTable').DataTable( {
+            dom: 'Bfrtip',
+            "scrollX": true,
+            left: 10,
+            buttons:bouton
+        });
+
+        var table = $('#table').DataTable( {
+            dom: 'Bfrtip',
+            buttons:bouton
+        });
+
+
+        //recuperation des id daans le dataTable chechbox 
+        $('#PdvControleurtable tbody').on('click', 'tr', function () {
+            var id = this.id;
+            //console.log(typeof this.id);
+            var index = $.inArray(id, selected);
+    
+            if ( index === -1 ) {
+                selected.push( id );
+                $('#btpdvtAct').attr("disabled", false);
+            } else {
+                //console.log(index);
+                selected.splice( index, 1 );
+                if(selected.length == 0){
+                    $('#btpdvtAct').attr("disabled", true);
+                }
+            }
+            $('#listepdvId').val([selected]);
+    
+            $(this).toggleClass('selected');
+             // console.log(selected);
+        } );
+
+        $(".selectAll").on( "click", function(e) {
+            if ($(this).is( ":checked" )) {
+                $('#PdvControleurtable').DataTable().rows().select();
+
+                //recuperation des id des row selectionner
+                $('.selectAlltd').each(function() {    
+                    var id=$(this).attr('id');
+
+                    var index = $.inArray(id, selected);
+        
+                    if ( index === -1 ) {
+                        selected.push( id );
+                    }                
+                });
+            } else {
+                $('#PdvControleurtable').DataTable().rows().deselect(); 
+
+                $('.selectAlltd').each(function() {     
+                    var id=$(this).attr('id');
+
+                    var index = $.inArray(id, selected);
+        
+                    if ( index != -1 ) {
+                
+                        selected.splice( index, 1 );
+                    }   
+
+                    if(selected.length == 0){
+                        $('#btpartAct').attr("disabled", true);
+                    }                  
+                   
+                });
+            }
+            $('#listepdvId').val(selected);
+           // console.log(selected);
+
+        });
+
+        $(".selectAll2").on( "click", function(e) {
+            if ($(this).is( ":checked" )) {
+                $('#PartenaireControleurtable').DataTable().rows().select(); 
+
+                //recuperation des id des row selectionner
+                $('.selectAlltd2').each(function() {     
+                    var id=$(this).attr('id');
+
+                    var index = $.inArray(id, selected1);
+        
+                    if ( index === -1 ) {
+                        selected1.push( id );
+                    }                     
+                   
+                });
+            } else {
+                $('#PartenaireControleurtable').DataTable().rows().deselect(); 
+
+                $('.selectAlltd2').each(function() {     
+                    var id=$(this).attr('id');
+
+                    var index = $.inArray(id, selected1);
+        
+                    if ( index != -1 ) {
+                
+                        selected1.splice( index, 1 );
+                    }   
+
+                    if(selected1.length == 0){
+                        $('#btpartAct').attr("disabled", true);
+                    }                  
+                   
+                });
+                //selected1 = [];
+            }
+            $('#acteurs').val(selected1);
+
+        });
+
+        $('#PartenaireControleurtable tbody').on('click', 'tr', function () {
+            var id = this.id;
+            //console.log(typeof this.id);
+            var index = $.inArray(id, selected1);
+    
+            if ( index === -1 ) {
+                selected1.push( id );
+                $('#btpartAct').attr("disabled", false);
+            } else {
+                //console.log(index);
+                selected1.splice( index, 1 );
+                if(selected1.length == 0){
+                    $('#btpartAct').attr("disabled", true);
+                }            
+            }
+            $('#acteurs').val(selected1);
+    
+            $(this).toggleClass('selected');
+            // console.log(selected1);
+        } );
+
+        $('#PartPdvControleurtable tbody').on('click', 'tr', function () {
+            var id = this.id;
+            var nom = $(this).find("td:nth-child(2)").html();
+            var cont = $(this).find("td:nth-child(3)").html();
+            var email = $(this).find("td:nth-child(4)").html();
+            var typeAc = $(this).find("td:nth-child(6)").html();
+            var index = $.inArray(id, selected2);
+    
+            if ( index === -1 ) {
+                
+                if(selected2.length != 0){
+                    selected2 = [];
+                    $("#PartPdvControleurtable").find("tbody").each(function(i,a){
+                        $(a).find("tr").removeClass("selected");
+                    });
+                }
+                selected2.push( id );
+                $('#acteurSelec').html(nom);
+                $('#acteurSelec2').html(cont);
+                $('#acteurSelec3').html(email);
+                $('#acteurSelec4').html(typeAc);
+                $('#btpartActPdv').attr("disabled", false);
+            } else {
+                selected2 = [];
+                $('#acteurSelec').html("");
+                $('#acteurSelec2').html("");
+                $('#acteurSelec3').html("");
+                $('#acteurSelec4').html("");
+                $('#btpartActPdv').attr("disabled", true);
+           
+            }
+            $('#acteurId').val(selected2);
+    
+            $(this).toggleClass('selected');
+        } );
+
+    });
+
+    //bouton d'action d'afficharge des PDV et CONTROLEUR
+    $('#btpartActPdv').on('click',function(){
+        //console.log('dff');
+        // console.log($('#listepdvId').val());
+        
+        $('#partenaire').attr('disabled',true);
+        $('.selectPDV').show();
+        //  $('#PdvControleurtable').css("display", "none");
+        $('.selectActeurPDV').remove();
+    });
+
+    //afficher le type de la question
+    $(document).on('click','.selectType',{passive:true},function(){
+
+        var chil = $($(this).attr('data-start-type')).find('input');
+        var str = '"'+$(this).attr('data-cible-type')+'"';
+
+        // Vérifie si la sous-chaîne existe dans la chaîne de caractères
+        if(str.includes("#type_param_select_")){
+            $(chil).removeAttr('required');
+            $(chil).removeClass('is-invalid');
+        } else{
+            $($($(this).attr('data-cible-type')).find('input')).attr("required","");
+            $($($(this).attr('data-cible-type')).find('input')).addClass('is-invalid');
+        }
+
+        $('.cible2').hide('slow');
+        $($(this).attr('data-cible-type')).show('slow');
+
+    });
+
+    //generer le formulaire de base
+    {% if prevalidation is defined %}
+
+        var form_data = {};
+
+        $(document).ready(function (){
+
+            const json_form_data = {{ prevalidation|raw }};
+            form_data  = $.parseJSON(JSON.stringify(json_form_data));
+
+            section2(form_data);
+
+            //auto select selected select
+            const selects = $('select');
+            for(var i = 0; i< selects.length ; i++){
+                const select = selects[i];
+                if(has_attr($(select) , 'value')){
+                    $(select).val($(select).attr('value'));
+                }
+            }
+
+        });
+
+        var generated_id = [];
+        const panel = '.sections_panel2';
+
+        function exist_in_arr(arr, obj) {
+            for (var i = 0; i < arr.length; i++) {
+                if (arr[i] == obj) return true;
+            }
+            return false;
+        }
+
+        function randomId(min, max) {
+            min = 0;
+            max = 9999;
+
+            var random = (Math.random() * (max - min) + min) * 100000;
+            if(!exist_in_arr(generated_id , random)){
+                generated_id.push(parseInt(random));
+                return parseInt(random);
+
+            }
+            else{
+                return randomId();
+            }
+
+
+        }
+
+        //section
+        function section2 (form_data) {
+            const section_id = randomId();
+            const accordeon_id = randomId();
+
+            const html = '<div id="section_'+section_id+'" class="card section_item2" data-children=".item">'+
+                '    <div class="card-header card-header-primary ">'+
+                '        <div class="form-row">'+
+                '            <a type="button" data-toggle="collapse" data-parent="#section_'+section_id+'" href="#accordion_'+accordeon_id+'" class="collapsed icon-arrow-down col-sm-1 opener text-center mt-2"></a>'+
+                '            <div class="col-sm-8">'+
+                '                <label>Titre de la Section :</label><input type="text" value="'+form_data['titre']+'" name="titre_section" placeholder="titre de la section" class="form-control" required>'+
+                '            </div>'+
+                '            <div class="col-sm-3 text-right">'+
+                '                <div class="btn-group">'+
+                '                    <button class="btn add_paragraph2" data-id="'+section_id+'" data-toggle="tooltip" data-placement="top" title="Ajouter une sous section" type="button"><i class="icon-add-more"></i></button>' +
+                '                    <button class="btn delete_item btn-link text-danger" data-target="#section_'+section_id+'" data-message="cette section et son contenue" data-toggle="tooltip" data-placement="top" title="Supprimer cette section" type="button"><i class="icon-delete"></i></button>' +
+                '                </div>'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '    <div class="item">'+
+                '        <div id="accordion_'+accordeon_id+'" class="collapse" role="tabpanel">'+
+                '            <div class="card-body section_content2">'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '</div>';
+
+
+            $(panel).append(html);
+
+            for(var x = 0 ; x<form_data['paragraphes'].length; x++){
+                $(panel).append(paragraphes2(section_id,form_data['paragraphes'][x]));
+            }
+        };
+
+        //paragraphe
+        function paragraphes2 (sub_section,form_data) {
+
+            const tag = $(this);
+            const paragraph_id = randomId();
+            const accordion_paragraph_id = randomId();
+            const sub_section_id = sub_section;
+            const sub_section_content = '#sub_section_'+sub_section_id+' .section_content2';
+            const html = '<div id="paragraph_'+paragraph_id+'" class="card paragraph_item2" data-children=".item">'+
+                '    <div class="card-header card-header-primary ">'+
+                '        <div class="form-row">'+
+                '            <a data-toggle="collapse" data-parent="#paragraph_'+paragraph_id+'" href="#sub_accordion_para_'+accordion_paragraph_id+'" class="collapsed icon-arrow-down col-sm-1 opener text-center mt-2"></a>'+
+                '            <div class="col-sm-8">'+
+                '                <label>Titre du Paragraphe :</label> <input type="text" value="'+form_data['titre']+'" name="titre_pg2" placeholder="titre du Paragraphe" class="form-control">'+
+                '            </div>'+
+                '            <div class="col-sm-3 text-right">'+
+                '                <div class="btn-group">'+
+                '                   <div class="btn-group">'+
+                '                       <button class="btn add_question2" data-id="'+paragraph_id+'" data-toggle="tooltip" data-placement="top" title="Ajouter une Question" type="button"><i class="icon-add-more"></i></button>' +
+                '                       <button class="btn delete_item btn-link text-danger" data-target="#paragraph_'+paragraph_id+'" data-message="ce paragraphe et son contenue" data-toggle="tooltip" data-placement="top" title="Supprimer ce paragraphe" type="button"><i class="icon-delete"></i></button>' +
+                '                   </div>'+
+                '                </div>'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '    <div class="item">'+
+                '        <div id="sub_accordion_para_'+accordion_paragraph_id+'" class="collapse" role="tabpanel">'+
+                '            <div class="card-body paragraph_content2 form-row">'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '</div>';
+
+            $(sub_section_content).append(html);
+
+            for(var x = 0 ; x<form_data['questions'].length; x++){
+                $(sub_section_content).append(questions2(paragraph_id,form_data['questions'][x]));
+            }
+
+        };
+
+        //question
+        function questions2 (paragraphe,form_data) {
+
+            const tag = $(this);
+            const question_id = randomId();
+            const paragraph_id = paragraphe;
+            const paragraph_content = '#paragraph_'+paragraph_id+' .paragraph_content2';
+            const qst_number = $(paragraph_content).find('.question_item2').length+1;
+
+            if( typeof form_data['option'] == 'undefined' || form_data['option'] =='' || form_data['option'] ==null ) {
+                var text="none";
+            }else{
+                var text="block";
+            }
+
+            if( typeof form_data['required'] == 'undefined' || form_data['required'] === true) {
+                var mandatory1="checked";
+                var mandatory2="";
+            }else{
+                var mandatory1="";
+                var mandatory2="checked";
+            }
+
+            if( typeof form_data['has_auto_rsp'] == 'undefined' || form_data['has_auto_rsp'] === false) {
+                var api1="";
+                var api2="checked";
+            }else{
+                var api1="checked";
+                var api2="";
+            }
+
+            const html =  '<div class="col-sm-4 question_item2" id="question_item_'+question_id+'">'+
+                '    <div class="card">'+
+                '        <div class="card-header card-header-primary">' +
+                '           <div class="form-row">' +
+                '            <div class="col-sm-12">'+
+                '                <span>Question  '+qst_number+'</span>'+
+                '                <button type="button" class="btn btn-link float-right delete_item" data-target="#question_item_'+question_id+'"><i class="icon-delete text-danger"></i></button>'+
+                '            </div>'+
+                '           </div>       ' +
+                '         </div>' +
+                '        <div class="card-body">'+
+                '            <div class="form-group">'+
+                '                <div class="form-row border-bottom">'+
+                '                    <div class="col-sm-6">'+
+                '                            <label>Mandatory</label>'+
+                '                    </div>'+
+                '                    <div class="col-sm-2">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input" type="radio" name="mandatory_'+question_id+'" value="oui" data-question_id="'+question_id+'" id="mandatory_oui_'+question_id+'" '+mandatory1+'>'+
+                '                            <label class="custom-control-label" for="mandatory_oui_'+question_id+'"><small>Oui</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                    <div class="col-sm-2">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input" type="radio" name="mandatory_'+question_id+'" value="non" data-question_id="'+question_id+'" id="mandatory_non_'+question_id+'" '+mandatory2+' >'+
+                '                            <label class="custom-control-label" for="mandatory_non_'+question_id+'"><small>Non</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                </div>'+
+                '                <div class="form-row select_type_'+question_id+'">'+
+                '                    <div class="col-sm-12">'+
+                '                        <div class="type_item type_champ_select_indicator" data-question_id="'+question_id+'" id="type_champ_select_'+question_id+'" data-textarea-cible="#question_textarea_'+question_id+'">'+
+                '                           <div class="form-group">'+
+                '                               <label>Nom de la question</label>'+
+                '                               <input type="text" class="form-control" value="'+form_data['label']+'"  name="nom_question" required>'+
+                '                           </div>'+
+                '                           <div class="form-group">'+
+                '                               <label class="">Type du champ</label>' +
+                '                               <div class="type_champ_select_tag">'+
+            '                                     <select name="type_question" class="custom-select typequestion2" value="'+form_data['type']+'">'+
+                '                                    <option value="">Sélectionner un type</option>'+
+                                                    {% for colonne in typechamp %}
+                '                                       <option value="{{ colonne['id'] }}" >{{ colonne['libelle'] }}</option>'+
+                                                    {% endfor %}
+                '                                </select>'+
+                '                             </div>'+
+                '                             <div class="mt-3" id="question_textarea_'+ question_id +'" style="display:'+ text +'" >' +
+                '                                 <textarea name="liste_option" rows="5" class="form-control" placeholder="Renseigner les differentes options ici, séparées de point virgules(;)">' + form_data['option'] + '</textarea>' +
+                '                             </div>'+
+                '                           </div>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                </div>'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '</div>';
+
+            $(paragraph_content).append(html);
+
+        };
+
+    {% endif %}
+
+    //generer le formulaire de base
+    {% if dysfonctionnement is defined %}
+
+        var form_data = {};
+
+        $(document).ready(function (){
+
+            const json_form_data = {{ dysfonctionnement|raw }};
+            form_data  = $.parseJSON(JSON.stringify(json_form_data));
+            
+            paragraphes3(form_data);
+
+            //auto select selected select
+            const selects = $('select');
+            for(var i = 0; i< selects.length ; i++){
+                const select = selects[i];
+                if(has_attr($(select) , 'value')){
+                    $(select).val($(select).attr('value'));
+                }
+            }
+
+        });
+
+        var generated_id = [];
+        const panel3 = '.paragraph_item3';
+
+        function exist_in_arr(arr, obj) {
+            for (var i = 0; i < arr.length; i++) {
+                if (arr[i] == obj) return true;
+            }
+            return false;
+        }
+
+        function randomId(min, max) {
+            min = 0;
+            max = 9999;
+
+            var random = (Math.random() * (max - min) + min) * 100000;
+            if(!exist_in_arr(generated_id , random)){
+                generated_id.push(parseInt(random));
+                return parseInt(random);
+
+            }
+            else{
+                return randomId();
+            }
+
+
+        }
+
+        //paragraphe
+        function paragraphes3 (form_data) {
+                                                
+            const paragraph_id = randomId();
+            const accordion_paragraph_id = randomId();
+            const html = '<div id="paragraph_'+paragraph_id+'" class="card paragraph_item" data-children=".item">'+
+                '    <div class="card-header card-header-primary ">'+
+                '        <div class="form-row">'+
+                '            <a data-toggle="collapse" data-parent="#paragraph_'+paragraph_id+'" href="#sub_accordion_para_'+accordion_paragraph_id+'" class="collapsed icon-arrow-down col-sm-1 opener text-center mt-2"></a>'+
+                '            <div class="col-sm-2">'+
+                '                <label>Code :</label> <input type="text" value="'+form_data['code']+'" name="form_title3" id="form_title3" placeholder="code" class="form-control">'+
+                '            </div>'+
+                '            <div class="col-sm-6">'+
+                '                <label>Titre du Paragraphe :</label> <input type="text" value="'+form_data['dysfonctionnement']+'" name="titre_pg3" id="titre_pg3" placeholder="titre du Paragraphe" class="form-control">'+
+                '            </div>'+
+                '            <div class="col-sm-3 text-right">'+
+                '                <div class="btn-group">'+
+                '                <div class="btn-group">'+
+                '                    <button class="btn add_question3" data-id="'+paragraph_id+'" data-toggle="tooltip" data-placement="top" title="Ajouter une Question" type="button"><i class="icon-add-more"></i></button>' +
+                '                    <button class="btn delete_item btn-link text-danger" data-target="#paragraph_'+paragraph_id+'" data-message="ce paragraphe et son contenue" data-toggle="tooltip" data-placement="top" title="Supprimer ce paragraphe" type="button"><i class="icon-delete"></i></button>' +
+                '                </div>'+
+                '                </div>'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '    <div class="item">'+
+                '        <div id="sub_accordion_para_'+accordion_paragraph_id+'" class="collapse" role="tabpanel">'+
+                '            <div class="card-body paragraph_content3 form-row">'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '</div>';
+
+            $(panel3).append(html);
+
+            for(var x = 0 ; x<form_data['questions'].length; x++){
+                $(panel3).append(questions3(paragraph_id,form_data['questions'][x]));
+            }
+
+        };
+        //question
+        function questions4 (form_data) {
+
+            const tag = $(this);
+            const question_id = randomId();
+            const paragraph_id = randomId();
+            const paragraph_content = '#paragraph_'+paragraph_id+' .paragraph_content3';
+            const qst_number = $(paragraph_content).find('.question_item').length+1;
+
+            if( typeof form_data['option'] == 'undefined' || form_data['option'] =='' || form_data['option'] ==null ) {
+                var text="none";
+            }else{
+                var text="block";
+            }
+
+            if( typeof form_data['required'] == 'undefined' || form_data['required'] === true) {
+                var mandatory1="checked";
+                var mandatory2="";
+            }else{
+                var mandatory1="";
+                var mandatory2="checked";
+            }
+
+            if( typeof form_data['has_auto_rsp'] == 'undefined' || form_data['has_auto_rsp'] === false) {
+                var api1="";
+                var api2="checked";
+            }else{
+                var api1="checked";
+                var api2="";
+            }
+
+            const html =  '<div class="col-sm-4 question_item" id="question_item_'+question_id+'">'+
+                '    <div class="card">'+
+                '        <div class="card-header card-header-primary">' +
+                '           <div class="form-row">' +
+                '            <div class="col-sm-12">'+
+                '                <span>Question  '+qst_number+'</span>'+
+                '                <button type="button" class="btn btn-link float-right delete_item" data-target="#question_item_'+question_id+'"><i class="icon-delete text-danger"></i></button>'+
+                '            </div>'+
+                '           </div>       ' +
+                '         </div>' +
+                '        <div class="card-body">'+
+                '            <div class="form-group">'+
+                '                <div class="form-row border-bottom">'+
+                '                    <div class="col-sm-6">'+
+                '                            <label>Mandatory</label>'+
+                '                    </div>'+
+                '                    <div class="col-sm-2">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input" type="radio" name="mandatory_'+question_id+'" value="oui" data-question_id="'+question_id+'" id="mandatory_oui_'+question_id+'" '+mandatory1+'>'+
+                '                            <label class="custom-control-label" for="mandatory_oui_'+question_id+'"><small>Oui</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                    <div class="col-sm-2">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input" type="radio" name="mandatory_'+question_id+'" value="non" data-question_id="'+question_id+'" id="mandatory_non_'+question_id+'" '+mandatory2+' >'+
+                '                            <label class="custom-control-label" for="mandatory_non_'+question_id+'"><small>Non</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                </div>'+
+                '                <div class="form-row select_type_'+question_id+'">'+
+                '                    <div class="col-sm-12">'+
+                '                        <div class="type_item type_champ_select_indicator" data-question_id="'+question_id+'" id="type_champ_select_'+question_id+'" data-textarea-cible="#question_textarea_'+question_id+'">'+
+                '                           <div class="form-group">'+
+                '                               <label>Nom de la question</label>'+
+                '                               <input type="text" class="form-control" value="'+form_data['label']+'"  name="nom_question" required>'+
+                '                           </div>'+
+                '                           <div class="form-group">'+
+                '                               <label>Réponse à la question</label>'+
+                '                               <input type="text" class="form-control" value="'+form_data['reponse']+'"  name="reponse_question">'+
+                '                           </div>'+                
+                '                           <div class="form-group">'+
+                '                               <label class="">Type du champ</label>' +
+                '                               <div class="type_champ_select_tag">'+
+            '                                     <select name="type_question" class="custom-select typequestion" value="'+form_data['type']+'">'+
+                '                                    <option value="">Sélectionner un type</option>'+
+                                                    {% for colonne in typechamp %}
+                '                                       <option value="{{ colonne['id'] }}" >{{ colonne['libelle'] }}</option>'+
+                                                    {% endfor %}
+                '                                </select>'+
+                '                             </div>'+
+                '                             <div class="mt-3" id="question_textarea_'+ question_id +'" style="display:'+ text +'" >' +
+                '                                 <textarea name="liste_option" rows="5" class="form-control" placeholder="Renseigner les differentes options ici, séparées de point virgules(;)">' + form_data['option'] + '</textarea>' +
+                '                             </div>'+
+                '                           </div>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                </div>'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '</div>';
+
+            $(paragraph_content).append(html);
+
+        };
+
+        //question
+        function questions3 (paragraphe,form_data) {
+
+            const tag = $(this);
+            const question_id = randomId();
+            const paragraph_id = paragraphe;
+            const paragraph_content = '#paragraph_'+paragraph_id+' .paragraph_content3';
+            const qst_number = $(paragraph_content).find('.question_item3').length+1;
+
+            if( typeof form_data['option'] == 'undefined' || form_data['option'] =='' || form_data['option'] ==null ) {
+                var text="none";
+            }else{
+                var text="block";
+            }
+
+            if( typeof form_data['required'] == 'undefined' || form_data['required'] === true) {
+                var mandatory1="checked";
+                var mandatory2="";
+            }else{
+                var mandatory1="";
+                var mandatory2="checked";
+            }
+
+            if( typeof form_data['has_auto_rsp'] == 'undefined' || form_data['has_auto_rsp'] === false) {
+                var api1="";
+                var api2="checked";
+            }else{
+                var api1="checked";
+                var api2="";
+            }
+
+            const html =  '<div class="col-sm-4 question_item3" id="question_item_'+question_id+'">'+
+                '    <div class="card">'+
+                '        <div class="card-header card-header-primary">' +
+                '           <div class="form-row">' +
+                '            <div class="col-sm-12">'+
+                '                <span>Question  '+qst_number+'</span>'+
+                '                <button type="button" class="btn btn-link float-right delete_item" data-target="#question_item_'+question_id+'"><i class="icon-delete text-danger"></i></button>'+
+                '            </div>'+
+                '           </div>       ' +
+                '         </div>' +
+                '        <div class="card-body">'+
+                '            <div class="form-group">'+
+                '                <div class="form-row border-bottom">'+
+                '                    <div class="col-sm-6">'+
+                '                            <label>Mandatory</label>'+
+                '                    </div>'+
+                '                    <div class="col-sm-2">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input" type="radio" name="mandatory_'+question_id+'" value="oui" data-question_id="'+question_id+'" id="mandatory_oui_'+question_id+'" '+mandatory1+'>'+
+                '                            <label class="custom-control-label" for="mandatory_oui_'+question_id+'"><small>Oui</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                    <div class="col-sm-2">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input" type="radio" name="mandatory_'+question_id+'" value="non" data-question_id="'+question_id+'" id="mandatory_non_'+question_id+'" '+mandatory2+' >'+
+                '                            <label class="custom-control-label" for="mandatory_non_'+question_id+'"><small>Non</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                </div>'+
+                '                <div class="form-row select_type_'+question_id+'">'+
+                '                    <div class="col-sm-12">'+
+                '                        <div class="type_item type_champ_select_indicator" data-question_id="'+question_id+'" id="type_champ_select_'+question_id+'" data-textarea-cible="#question_textarea_'+question_id+'">'+
+                '                           <div class="form-group">'+
+                '                               <label>Nom de la question</label>'+
+                '                               <input type="text" class="form-control" value="'+form_data['label']+'"  name="nom_question" required>'+
+                '                           </div>'+
+                '                           <div class="form-group">'+
+                '                               <label>Réponse à la question</label>'+
+                '                               <input type="text" class="form-control" value="'+form_data['reponse']+'" name="reponse_question">'+
+                '                           </div>'+
+                '                           <div class="form-group">'+
+                '                               <label class="">Type du champ</label>' +
+                '                               <div class="type_champ_select_tag">'+
+            '                                     <select name="type_question" class="custom-select typequestion3" value="'+form_data['type']+'">'+
+                '                                    <option value="">Sélectionner un type</option>'+
+                                                    {% for colonne in typechamp %}
+                '                                       <option value="{{ colonne['id'] }}" >{{ colonne['libelle'] }}</option>'+
+                                                    {% endfor %}
+                '                                </select>'+
+                '                             </div>'+
+                '                             <div class="mt-3" id="question_textarea_'+ question_id +'" style="display:'+ text +'" >' +
+                '                                 <textarea name="liste_option" rows="5" class="form-control" placeholder="Renseigner les differentes options ici, séparées de point virgules(;)">' + form_data['option'] + '</textarea>' +
+                '                             </div>'+
+                '                           </div>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                </div>'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '</div>';
+
+            $(paragraph_content).append(html);
+
+        };
+
+    {% endif %}
+
+    //generer le formulaire de base
+    {% if form_data is defined %}
+
+        var form_data = {};
+
+        $(document).ready(function (){
+
+            const json_form_data = {{ form_data|raw }};
+            form_data  = $.parseJSON(JSON.stringify(json_form_data));
+
+            const questions_tag = $('.generFormulaire');
+
+            for(var x = 0 ; x<form_data.length; x++){
+                section(form_data[x]);
+            }
+
+            //auto select selected select
+            const selects = $('select');
+            for(var i = 0; i< selects.length ; i++){
+                const select = selects[i];
+                if(has_attr($(select) , 'value')){
+                    $(select).val($(select).attr('value'));
+                }
+            }
+
+        });
+
+        var generated_id = [];
+        const panel = '.sections_panel';
+
+        function exist_in_arr(arr, obj) {
+            for (var i = 0; i < arr.length; i++) {
+                if (arr[i] == obj) return true;
+            }
+            return false;
+        }
+
+        function randomId(min, max) {
+            min = 0;
+            max = 9999;
+
+            var random = (Math.random() * (max - min) + min) * 100000;
+            if(!exist_in_arr(generated_id , random)){
+                generated_id.push(parseInt(random));
+                return parseInt(random);
+
+            }
+            else{
+                return randomId();
+            }
+
+
+        }
+
+        //section
+        function section (form_data) {
+            const section_id = randomId();
+            const accordeon_id = randomId();
+
+            const html = '<div id="section_'+section_id+'" class="card section_item" data-children=".item">'+
+                '    <div class="card-header card-header-primary ">'+
+                '        <div class="form-row">'+
+                '            <a type="button" data-toggle="collapse" data-parent="#section_'+section_id+'" href="#accordion_'+accordeon_id+'" class="collapsed icon-arrow-down col-sm-1 opener text-center mt-2"></a>'+
+                '            <div class="col-sm-8">'+
+                '                <label>Titre de la Section :</label><input type="text" value="'+form_data['titre']+'" name="titre_section" placeholder="titre de la section" class="form-control" >'+
+                '            </div>'+
+                '            <div class="col-sm-3 text-right">'+
+                '                <div class="btn-group">'+
+                '                    <button class="btn add_sub_section" data-id="'+section_id+'" data-toggle="tooltip" data-placement="top" title="Ajouter une sous section" type="button"><i class="icon-add-more"></i></button>' +
+                '                    <button class="btn delete_item btn-link text-danger" data-target="#section_'+section_id+'" data-message="cette section et son contenue" data-toggle="tooltip" data-placement="top" title="Supprimer cette section" type="button"><i class="icon-delete"></i></button>' +
+                '                </div>'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '    <div class="item">'+
+                '        <div id="accordion_'+accordeon_id+'" class="collapse" role="tabpanel">'+
+                '            <div class="card-body section_content">'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '</div>';
+
+
+            $(panel).append(html);
+
+            for(var x = 0 ; x<form_data['sousSections'].length; x++){
+                $(panel).append(sousSection(section_id,form_data['sousSections'][x]));
+            }
+        };
+
+        //sub_sections
+        function sousSection (section,form_data) {
+            const tag = $(this);
+            const sub_section_id = randomId();
+            const sub_accordeon_id = randomId();
+            const section_id = section;
+            const section_content = '#section_'+section_id+' .section_content';
+
+            const html = '<div id="sub_section_'+sub_section_id+'" class="card sub_section_item" data-children=".item">'+
+                '    <div class="card-header card-header-primary ">'+
+                '        <div class="form-row">'+
+                '            <a data-toggle="collapse" data-parent="#sub_section_'+sub_section_id+'" href="#sub_accordion_'+sub_accordeon_id+'" class="collapsed icon-arrow-down col-sm-1 opener text-center mt-2"></a>'+
+                '            <div class="col-sm-8">'+
+                '                <label>Titre de la Sous-Section :</label><input type="text" value="'+form_data['titre']+'" name="titre_sous_section" placeholder="titre de la sous-section" class="form-control" >'+
+                '            </div>'+
+                '            <div class="col-sm-3 text-right">'+
+                '                <div class="btn-group">'+
+                '                    <button class="btn add_paragraph" data-id="'+sub_section_id+'" data-toggle="tooltip" data-placement="top" title="Ajouter un Paragraphe" type="button"><i class="icon-add-more"></i></button>' +
+                '                    <button class="btn delete_item btn-link text-danger" data-target="#sub_section_'+sub_section_id+'" data-message="cette sous-section et son contenue" data-toggle="tooltip" data-placement="top" title="Supprimer sous-section" type="button"><i class="icon-delete"></i></button>' +
+                '                </div>'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '    <div class="item">'+
+                '        <div id="sub_accordion_'+sub_accordeon_id+'" class="collapse" role="tabpanel">'+
+                '            <div class="card-body sub_section_content">'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '</div>';
+
+            $(section_content).append(html);
+
+            for(var x = 0 ; x<form_data['paragraphes'].length; x++){
+                $(section_content).append(paragraphes(sub_section_id,form_data['paragraphes'][x]));
+            }
+        };
+
+        //paragraphe
+        function paragraphes (sub_section,form_data) {
+
+            const tag = $(this);
+            const paragraph_id = randomId();
+            const accordion_paragraph_id = randomId();
+            const sub_section_id = sub_section;
+            const sub_section_content = '#sub_section_'+sub_section_id+' .sub_section_content';
+            const html = '<div id="paragraph_'+paragraph_id+'" class="card paragraph_item" data-children=".item">'+
+                '    <div class="card-header card-header-primary ">'+
+                '        <div class="form-row">'+
+                '            <a data-toggle="collapse" data-parent="#paragraph_'+paragraph_id+'" href="#sub_accordion_para_'+accordion_paragraph_id+'" class="collapsed icon-arrow-down col-sm-1 opener text-center mt-2"></a>'+
+                '            <div class="col-sm-8">'+
+                '                <label>Titre du Paragraphe :</label> <input type="text" value="'+form_data['titre']+'" name="titre_pg" placeholder="titre du Paragraphe" class="form-control">'+
+                '            </div>'+
+                '            <div class="col-sm-3 text-right">'+
+                '                <div class="btn-group">'+
+                '                <div class="btn-group">'+
+                '                    <button class="btn add_question" data-id="'+paragraph_id+'" data-toggle="tooltip" data-placement="top" title="Ajouter une Question" type="button"><i class="icon-add-more"></i></button>' +
+                '                    <button class="btn delete_item btn-link text-danger" data-target="#paragraph_'+paragraph_id+'" data-message="ce paragraphe et son contenue" data-toggle="tooltip" data-placement="top" title="Supprimer ce paragraphe" type="button"><i class="icon-delete"></i></button>' +
+                '                </div>'+
+                '                </div>'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '    <div class="item">'+
+                '        <div id="sub_accordion_para_'+accordion_paragraph_id+'" class="collapse" role="tabpanel">'+
+                '            <div class="card-body paragraph_content form-row">'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '</div>';
+
+            $(sub_section_content).append(html);
+
+            for(var x = 0 ; x<form_data['questions'].length; x++){
+                $(sub_section_content).append(questions(paragraph_id,form_data['questions'][x]));
+            }
+
+        };
+
+        //question
+        function questions (paragraphe,form_data) {
+
+            const tag = $(this);
+            const question_id = randomId();
+            const paragraph_id = paragraphe;
+            const paragraph_content = '#paragraph_'+paragraph_id+' .paragraph_content';
+            const qst_number = $(paragraph_content).find('.question_item').length+1;
+
+            if( typeof form_data['option'] == 'undefined' || form_data['option'] =='' || form_data['option'] ==null ) {
+                var text="none";
+            }else{
+                var text="block";
+            }
+
+            if( typeof form_data['required'] == 'undefined' || form_data['required'] === true) {
+                var mandatory1="checked";
+                var mandatory2="";
+            }else{
+                var mandatory1="";
+                var mandatory2="checked";
+            }
+
+            if( typeof form_data['has_auto_rsp'] == 'undefined' || form_data['has_auto_rsp'] === false) {
+                var api1="";
+                var api2="checked";
+            }else{
+                var api1="checked";
+                var api2="";
+            }
+
+            const html =  '<div class="col-sm-4 question_item" id="question_item_'+question_id+'">'+
+                '    <div class="card">'+
+                '        <div class="card-header card-header-primary">' +
+                '           <div class="form-row">' +
+                '            <div class="col-sm-12">'+
+                '                <span>Question  '+qst_number+'</span>'+
+                '                <button type="button" class="btn btn-link float-right delete_item" data-target="#question_item_'+question_id+'"><i class="icon-delete text-danger"></i></button>'+
+                '            </div>'+
+                '           </div>       ' +
+                '         </div>' +
+                '        <div class="card-body">'+
+                '            <div class="form-group">'+
+                '                <div class="form-row border-bottom">'+
+                '                    <div class="col-sm-6">'+
+                '                            <label>Mandatory</label>'+
+                '                    </div>'+
+                '                    <div class="col-sm-2">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input" type="radio" name="mandatory_'+question_id+'" value="oui" data-question_id="'+question_id+'" id="mandatory_oui_'+question_id+'" '+mandatory1+'>'+
+                '                            <label class="custom-control-label" for="mandatory_oui_'+question_id+'"><small>Oui</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                    <div class="col-sm-2">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input" type="radio" name="mandatory_'+question_id+'" value="non" data-question_id="'+question_id+'" id="mandatory_non_'+question_id+'" '+mandatory2+' >'+
+                '                            <label class="custom-control-label" for="mandatory_non_'+question_id+'"><small>Non</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                </div>'+
+                '                <div class="form-row" style="margin-top:35px">'+
+                '                    <div class="col-sm-6">'+
+                '                         <label>Appel d\'API</label>'+
+                '                    </div>'+
+                '                    <div class="col-sm-2">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input" type="radio" name="api_'+question_id+'" value="oui" data-question_id="'+question_id+'" id="api_oui_'+question_id+'" '+api1+'>'+
+                '                            <label class="custom-control-label" for="api_oui_'+question_id+'"><small>Oui</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                    <div class="col-sm-2">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input" type="radio" name="api_'+question_id+'" value="non" data-question_id="'+question_id+'" id="api_non_'+question_id+'" '+api2+'>'+
+                '                            <label class="custom-control-label" for="api_non_'+question_id+'"><small>Non</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                </div>'+
+                '                <div class="form-row" style="margin-top:35px">'+
+                '                    <div class="col-sm-6">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input selectType" type="radio" name="qst_type_'+question_id+'" data-question_id="'+question_id+'" id="qst_type_champ_'+question_id+'" data-cible-type="#type_champ_select_'+question_id+'" data-start-type="#type_param_select_'+question_id+'" checked>'+
+                '                            <label class="custom-control-label" for="qst_type_champ_'+question_id+'"><small>Ajouter une question</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                    <div class="col-sm-6">'+
+                '                        <div class="custom-control custom-radio">'+
+                '                            <input class="custom-control-input selectType" type="radio" name="qst_type_'+question_id+'" data-question_id="'+question_id+'" id="qst_type_param_'+question_id+'" data-cible-type="#type_param_select_'+question_id+'" data-start-type="#type_champ_select_'+question_id+'">'+
+                '                            <label class="custom-control-label" for="qst_type_param_'+question_id+'"><small>Sélectionner une question</small></label>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                </div>'+
+                '                <div class="form-row select_type_'+question_id+'">'+
+                '                    <div class="col-sm-12">'+
+                '                        <div class="type_item type_champ_select_indicator" data-question_id="'+question_id+'" id="type_champ_select_'+question_id+'" data-textarea-cible="#question_textarea_'+question_id+'">'+
+                '                           <div class="form-group">'+
+                '                               <label>Nom de la question</label>'+
+                '                               <input type="text" class="form-control" value="'+form_data['label']+'"  name="nom_question" required>'+
+                '                           </div>'+
+                '                           <div class="form-group">'+
+                '                               <label class="">Type du champ</label>' +
+                '                               <div class="type_champ_select_tag">'+
+            '                                     <select name="type_question" class="custom-select typequestion" value="'+form_data['type']+'">'+
+                '                                    <option value="">Sélectionner un type</option>'+
+                                                    {% for colonne in typechamp %}
+                '                                       <option value="{{ colonne['id'] }}" >{{ colonne['libelle'] }}</option>'+
+                                                    {% endfor %}
+                '                                </select>'+
+                '                             </div>'+
+                '                             <div class="mt-3" id="question_textarea_'+ question_id +'" style="display:'+ text +'" >' +
+                '                                 <textarea name="liste_option" rows="5" class="form-control" placeholder="Renseigner les differentes options ici, séparées de point virgules(;)">' + form_data['option'] + '</textarea>' +
+                '                             </div>'+
+                '                           </div>'+
+                '                        </div>'+
+                '                        <div class="type_item" id="type_param_select_'+question_id+'" style="display: none">'+
+                '                            <label class="">Question</label>'+
+                '                               <div class="type_param_select_tag">'+
+            '                                     <select name="type_question2" class="custom-select">'+
+                '                                     <option value="">Sélectionner un type</option>'+
+                                                    {% for colonne in parametre %}
+                '                                       <option value="{{ colonne['id'] }}" data-label="{{ colonne['questionnaire']['libelle'] }}" data-type="{{ colonne['questionnaire']['type'] }}" data-option="{{ colonne['questionnaire']['listeoption'] }}">{{ colonne['questionnaire']['libelle'] }}</option>'+
+                                                    {% endfor %}
+                '                                </select>'+
+                '                             </div>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                </div>'+
+                '            </div>'+
+                '        </div>'+
+                '    </div>'+
+                '</div>';
+
+            $(paragraph_content).append(html);
+
+        };
+
+    {% endif %}
+    
+    //chargement des pdvs pour l'attribution
+    function getTypeActeursa(data){
+        if(data != undefined){
+            if(data.length > 0){
+                var rl = [];
+                for(var i = 0; i<data.length;i++){
+                    rl.push('{'+data[i].libelle.toUpperCase()+'}');
+                }
+                return rl.join(' ');
+            }
+            return '';
+        }
+        return '';
+    }
+
+    $(document).on('change','#typepdva',{passive:true},function () {
+        if ( $.fn.dataTable.isDataTable('#PdvControleurtable') ) {
+            $('#PdvControleurtable').DataTable().destroy();
+        }
+
+        var idControleur = $('#acteurId').val();
+
+        var url1 = '{{ path("dataActeurPdv1",{'id':"article_id"})}}'.replace("article_id", idControleur);
+
+        $.ajax({
+            type: 'GET',
+            url: url1,
+            success:function(data) {
+                datad = $.parseJSON(data)
+                //$('#acteurCount').html((datad.acteurCount).toLocaleString('en-US'))
+                
+                if (datad !== null) {                    
+                    for (i = 0; i < datad.length; i++) {
+                        
+                        var id=(datad[i]['id']).toString();
+
+                        var index = $.inArray(id, selected);
+
+                        if ( index === -1 ) {
+                            selected.push( id );
+                            $('#btpdvtAct').attr("disabled", false);
+                        }
+                       // selected.splice((datad[i]['id']).toString(), 1 );
+                       // selected.push( (datad[i]['id']).toString() );
+                    }
+                }
+
+                $('#listepdvId').val(selected);
+            }
+        });
+
+        if(selected.length == 0){
+            $('#btpdvtAct').attr("disabled", false);
+        }else{
+            $('#btpdvtAct').attr("disabled", true);
+        }
+
+        var typepdv = $('#typepdva').val();
+        var partenaire = $('#partenaire').val();
+        var donnees = $('#donnees').val();
+        var data = "nom_commercial=&nom_responsable=&typePdv="+typepdv+"&partenaire="+partenaire+"&ville="+donnees+"";
+
+        var url = '{{ path("getSearchPdv", {'id': 'article_id'}) }}';
+        url = url.replace("article_id", data);
+
+        $('#PdvControleurtable').dataTable({
+            "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+            "iDisplayLength": 50,
+            'bProcessing': true, 'bServerSide': true,
+            'sAjaxSource': url,
+            "url": "data.json",
+            "dataSrc": "tableData",
+            dom: 'rtip',
+        columnDefs: [{
+        orderable: false,
+        className: 'select-checkbox',
+                    targets: 0
+        }],
+        select: {
+            style: 'multi',
+            selector: 'td:first-child'
+            },
+            'fnServerData': function (source, data, callback) {
+                $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                        var rows = [];
+                        for(var i = 0; i<data.aaData.length ; i++){
+                            const o = data.aaData[i];
+                            const obj = {
+                                id:o.id,
+                                type_pdv:(o.type_pdv !== undefined && o.type_pdv !== null)?o.type_pdv.libelle.toUpperCase():'',
+                                profilePdv:(o.profilePdv !== undefined && o.profilePdv !== null)?o.profilePdv.toUpperCase():'',
+                                nom_commercial: (o.nom_commercial !== undefined && o.nom_commercial !== null)?o.nom_commercial.toUpperCase():'',
+                                partenaire: (o.partenaire !== undefined && o.partenaire !== null)?o.partenaire.libelle.toUpperCase():'',
+                                type_acteur:getTypeActeursa(o.type_acteur),
+                                // region: (o.ville !== undefined && o.ville !== null)?o.ville.region.libelle.toUpperCase():'',
+                                ville: (o.ville !== undefined && o.ville !== null)?o.ville.libelle.toUpperCase():'',
+                            }
+                            rows.push(obj);
+                        }
+                        data.aaData = rows;
+                        callback(data);
+                    }})
+            },
+            "rowCallback": function( row, data ) {
+                $(row).attr('id', data.id);
+                $(row).addClass('selectAlltd');
+                var id = (data.id).toString();
+                var input = ($('#listepdvId').val()).split(',');
+                var index = $.inArray(id,input);
+
+                if ( index != -1 ) {
+                   $(row).addClass('selected');
+                }
+            },
+
+            "columns": [
+                { "data": function(d){return ''} },
+                { "data": function(d){return d.type_pdv} },
+                { "data": function(d){return d.profilePdv} },
+                { "data": function(d){return d.nom_commercial} },
+                { "data": function(d){return d.partenaire} },
+                { "data": function(d){return d.type_acteur} },
+                { "data": function(d){return d.ville} },
+            ]
+        });
+
+    });
+
+
+    $(document).on('change','#typeActeurPart',{passive:true},function () {
+        if ( $.fn.dataTable.isDataTable('#PartenaireControleurtable') ) {
+            $('#PartenaireControleurtable').DataTable().destroy();
+        }
+
+        var typeacteurControleur = $('#typeActeurPart').val();
+        var partenaire = $('#partenaire').val();
+
+        var url1 = '{{ path("dataPartActeur",{id:"article_id"})}}'.replace("article_id", partenaire);
+
+        $.ajax({
+            type: 'GET',
+            url: url1,
+            success:function(data) {
+                datad = $.parseJSON(data)
+                //$('#acteurCount').html((datad.acteurCount).toLocaleString('en-US'))
+                
+                if (datad !== null) {                    
+                    for (i = 0; i < datad.length; i++) {
+                        
+                        var id=(datad[i]['id']).toString();
+
+                        var index = $.inArray(id, selected1);
+
+                        if ( index === -1 ) {
+                            selected1.push( id );
+                            $('#btpdvtAct').attr("disabled", false);
+                        }
+
+                      //  selected1.splice((datad[i]['id']).toString(), 1 );
+                     //   selected1.push( (datad[i]['id']).toString() );
+                    }
+                }
+                $('#acteurs').val(selected1);
+            }
+        });
+
+        if(selected1.length == 0){
+            $('#btpartAct').attr("disabled", false);
+        }else{
+            $('#btpartAct').attr("disabled", true);
+        }
+
+        var data = "nom_prenoms=&contact=&email=&typeActeur="+typeacteurControleur+"&partenaire=&actived=";
+        var url = '{{ path("getSearchActeur", {id: "article_id"}) }}'.replace("article_id", data);
+
+        //console.log(url);
+        $('#PartenaireControleurtable').dataTable({
+            "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+            "iDisplayLength": 50,
+            'bProcessing': true, 'bServerSide': true,
+            'sAjaxSource': url,
+            "url": "data.json",
+            "dataSrc": "tableData",
+            dom: 'rtip',
+        columnDefs: [{
+        orderable: false,
+        className: 'select-checkbox',
+                    targets: 0
+        }],
+        select: {
+            style: 'multi',
+            selector: 'td:first-child'
+            },
+            'fnServerData': function (source, data, callback) {
+                $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                        var rows = [];
+                        for(var i = 0; i<data.aaData.length ; i++){
+                            const o = data.aaData[i];
+                            const obj = {
+                                id:o.id,
+                                nom_prenoms:o.nom_prenoms.replace(/�+/g, ' \' ' ).toUpperCase(),
+                                contact: (o.contact !== undefined)?o.contact:'',
+                                email: (o.email !== undefined)?o.email:'',
+                                hierarchy: (o.hierarchy !== undefined && o.hierarchy !== null && o.hierarchytypeActeur !== undefined && o.hierarchytypeActeur !== null)?o.hierarchy.toUpperCase()+'A/N'+o.hierarchytypeActeur.toUpperCase()+'/N':'',
+                                type_acteur: (o.type_acteur !== undefined && o.type_acteur !== null)?o.type_acteur.toUpperCase():'',
+                            }
+                            rows.push(obj);
+                        }
+                        data.aaData = rows;
+                        callback(data);
+                    }})
+            },
+            "rowCallback": function( row, data ) {
+                $(row).attr('id', data.id);
+                $(row).addClass('selectAlltd2');
+                var id = (data.id).toString();
+                var input = ($('#acteurs').val()).split(',');
+                var index = $.inArray(id,input);
+
+                if ( index != -1 ) {
+                   $(row).addClass('selected');
+                }
+            },
+
+            "columns": [
+                { "data": function(d){return ''} },
+                { "data": function(d){return d.nom_prenoms} },
+                { "data": function(d){return d.contact} },
+                { "data": function(d){return d.email} },
+                { "data": function(d){return d.hierarchy} },
+                { "data": function(d){return d.type_acteur} },
+            ]
+        });
+
+    });
+
+        //typeActeurPartContro
+    $(document).on('change','#typeActeurPartContro',{passive:true},function () {
+        if ( $.fn.dataTable.isDataTable('#PartPdvControleurtable') ) {
+            $('#PartPdvControleurtable').DataTable().destroy();
+        }
+
+        var typeacteurControleur = $('#typeActeurPartContro').val();
+        var partenaire = $('#partenaire').val();
+      //  var data = "nom_prenoms=&contact=&email=&typeActeur="+typeacteurControleur+"&actived=";
+        var data = "nom_prenoms=&contact=&email=&typeActeur="+typeacteurControleur+"&partenaire="+partenaire+"&actived=";
+
+        var url = '{{ path("getSearchActeur", {id: "article_id"}) }}'.replace("article_id", data);
+
+        $('#PartPdvControleurtable').dataTable({
+            "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+            "iDisplayLength": 50,
+            'bProcessing': true, 'bServerSide': true,
+            'sAjaxSource': url,
+            "url": "data.json",
+            "dataSrc": "tableData",
+            dom: 'rtip',
+        columnDefs: [{
+            orderable: false,
+            className: 'select-checkbox',
+                        targets: 0
+        }],
+        select: {
+            style: 'os',
+            selector: 'td:first-child'
+            },
+            'fnServerData': function (source, data, callback) {
+                $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                        var rows = [];
+                        for(var i = 0; i<data.aaData.length ; i++){
+                            const o = data.aaData[i];
+                            const obj = {
+                                id:o.id,
+                                nom_prenoms:o.nom_prenoms.toUpperCase(),
+                                contact: (o.contact !== undefined)?o.contact:'',
+                                email: (o.email !== undefined)?o.email:'',
+                                hierarchy: (o.hierarchy !== undefined && o.hierarchy !== null && o.hierarchytypeActeur !== undefined && o.hierarchytypeActeur !== null)?o.hierarchy.toUpperCase()+'{'+o.hierarchytypeActeur.toUpperCase()+'}':'',
+                                type_acteur: (o.type_acteur !== undefined && o.type_acteur !== null)?o.type_acteur.toUpperCase():'',
+                            }
+                            rows.push(obj);
+                        }
+                        data.aaData = rows;
+                        callback(data);
+                    }})
+            },
+            "rowCallback": function( row, data ) {
+                $(row).attr('id', data.id);
+                var id = (data.id).toString();
+                var input = ($('#acteurId').val()).split(',');
+                var index = $.inArray(id,input);
+
+                if ( index != -1 ) {
+                   $(row).addClass('selected');
+                }
+            },
+
+            "columns": [
+                { "data": function(d){return ''} },
+                { "data": function(d){return d.nom_prenoms} },
+                { "data": function(d){return d.contact} },
+                { "data": function(d){return d.email} },
+                { "data": function(d){return d.hierarchy} },
+                { "data": function(d){return d.type_acteur} },
+            ]
+        });
+
+    });
+                 
+</script>
+
+<script>
+    function myFunction() {
+        // Declare variables
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("myInput");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("PartenaireControleurtable");
+        tr = table.getElementsByTagName("tr");
+
+        // Loop through all table rows, and hide those who don't match the search query
+        for (i = 0; i < tr.length; i++) {
+            td = tr[i].getElementsByTagName("td")[2];
+            if (td) {
+                txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+
+    function myFunction() {
+        document.getElementById('addFix').style.cssText = 'position: fixed;';
+    }
+</script>

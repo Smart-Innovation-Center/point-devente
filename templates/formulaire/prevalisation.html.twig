@@ -1,0 +1,433 @@
+
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+
+    <script>
+        bouton= [
+            {
+                extend: 'copy',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'csv',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'excel',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'pdf',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            {
+                extend: 'print',
+                exportOptions: {
+                    columns: ':visible'
+                }
+            },
+            'colvis'
+        ];
+
+        function render_action(id,typeVisite){
+
+            var url = '{{ path("detailprevalidationfiche", {id: "article_id"}) }}';
+            url = url.replace("article_id", id);
+
+        action_btn='<a class="btn btn-success" href="'+ url +'"  role="button">Détail</a>';
+        
+            return action_btn;
+        }
+
+        function formatDate(date) {
+            var d = new Date(date);
+            return d.toLocaleString();
+        }
+
+        function affiche_status(data){
+            if(data !== undefined){
+                if(data == false){
+                    return '<span class="status-attente">EN ATTENTE</span>';
+                }
+                if(data == true){
+                    return '<span class="status-actif">VALIDER</span>';
+                }
+                if(data == 2){
+                    return '<span class="status-inactif">INVALIDER</span>';
+                }
+            }
+            return '';
+        }
+
+        $(document).ready(function () {
+            $('#visitePrevalidation').dataTable({
+                "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                "iDisplayLength": 50,
+                'bProcessing': true, 'bServerSide': true,
+                'sAjaxSource': '{{ path("getPrevalidation") }}',
+                "url": "data.json",
+                "dataSrc": "tableData",
+                dom: 'Brtip',
+                "scrollX": true,
+                buttons:bouton,
+                'fnServerData': function (source, data, callback) {
+                    $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                            var rows = [];
+                            for(var i = 0; i<data.aaData.length ; i++){
+                                const o = data.aaData[i];
+                                const obj = {
+                                            status:affiche_status(o.status),
+                                            date:(o.date !== undefined && o.date !== null)?formatDate(o.date):'',
+                                    typeVisite: (o.typeVisite !== undefined && o.typeVisite !== null)?o.typeVisite.libelle:'',
+                                    acteur: (o.acteur !== undefined && o.acteur !== null)?o.acteur.nom_prenoms:'',
+                                    pdv_type_pdv: (o.pdv !== undefined && o.pdv !== null)?o.pdv.type_pdv.libelle:'',
+                                    pdv_nom_commercial: (o.pdv !== undefined && o.pdv !== null)?o.pdv.nom_commercial:'',
+                                    pdv_numero_tete_pont: (o.pdv !== undefined && o.pdv !== null)?o.pdv.numero_tete_pont:'',
+                                    pdv_entiteControle: (o.pdv !== undefined && o.pdv !== null)?o.pdv.entiteControle:'',
+                                    pdv_nom_responsable: (o.pdv !== undefined && o.pdv !== null)?o.pdv.nom_responsable:'',
+                                            action: render_action(o.id,o.typeVisite.libelle)
+                                        }
+                                rows.push(obj);
+                            }
+                            data.aaData = rows;
+                            callback(data);
+                        }})
+                },
+
+                "columns": [
+                    { "data": function(d){return d.status} },
+                    { "data": function(d){return d.date} },
+                    { "data": function(d){return d.typeVisite} },
+                    { "data": function(d){return d.acteur} },
+                    { "data": function(d){return d.pdv_type_pdv} },
+                    { "data": function(d){return d.pdv_nom_commercial} },
+                    { "data": function(d){return d.pdv_numero_tete_pont} },
+                    { "data": function(d){return d.pdv_entiteControle} },
+                    { "data": function(d){return d.pdv_nom_responsable} },
+                    { "data": function(d){return d.action} },
+                ]
+            });
+        });
+
+        $(document).on('click','#submit_form',{passive:true},function () {
+            if ( $.fn.dataTable.isDataTable('#visitePrevalidation') ) {
+                $('#visitePrevalidation').DataTable().destroy();
+            }
+
+            var acteur = $('#acteur').val();
+            var numPDV = $('#numPDV').val();
+           var status = $('#status').val();
+            var datedebut = $('#datedebut').val();
+            var datefin = $('#datefin').val();
+            //var data = "typeVisite="+typevisite+"&acteur="+acteur+"&start="+datedebut+"&end="+datefin+"";
+          //  var data = "acteur="+acteur+"&numPDV="+numPDV+"&start="+datedebut+"&end="+datefin+"";
+    
+            var data = "";
+
+            if( acteur.replace(/\s+/, '').length ) {
+                data=data+'&nom_prenoms='+acteur;
+            }
+            if( numPDV.replace(/\s+/, '').length ) {
+                data=data+'&numeroPdv='+numPDV;
+            }
+            if( status.replace(/\s+/, '').length ) {
+                data=data+'&status='+status;
+            }
+            if( datedebut.replace(/\s+/, '').length ) {
+                data=data+'&start='+datedebut;
+            }
+            if( datefin.replace(/\s+/, '').length ) {
+                data=data+'&end='+datefin;
+            }
+
+            if(data.length>0){
+                data1=data.substr(1);
+            }
+
+            var url = '{{ path("getSearchPreva", {id: "article_id"}) }}';
+            url = url.replace("article_id", data1);
+
+            $('#visitePrevalidation').dataTable({
+                "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                "iDisplayLength": 50,
+                'bProcessing': true, 'bServerSide': true,
+                'sAjaxSource': url,
+                "url": "data.json",
+                "dataSrc": "tableData",
+                dom: 'Bfrtip',
+                "scrollX": true,
+                buttons:bouton,
+                'fnServerData': function (source, data, callback) {
+                    $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                            var rows = [];
+                            for(var i = 0; i<data.aaData.length ; i++){
+                                const o = data.aaData[i];
+                                const obj = {
+                                            status:affiche_status(o.status),
+                                            date:(o.date !== undefined && o.date !== null)?formatDate(o.date):'',
+                                            typeVisite: (o.typeVisite !== undefined && o.typeVisite !== null)?o.typeVisite.libelle:'',
+                                            acteur: (o.acteur !== undefined && o.acteur !== null)?o.acteur.nom_prenoms:'',
+                                            pdv_type_pdv: (o.pdv !== undefined && o.pdv !== null)?o.pdv.type_pdv.libelle:'',
+                                            pdv_nom_commercial: (o.pdv !== undefined && o.pdv !== null)?o.pdv.nom_commercial:'',
+                                            pdv_numero_tete_pont: (o.pdv !== undefined && o.pdv !== null)?o.pdv.numero_tete_pont:'',
+                                            pdv_entiteControle: (o.pdv !== undefined && o.pdv !== null)?o.pdv.entiteControle:'',
+                                            pdv_nom_responsable: (o.pdv !== undefined && o.pdv !== null)?o.pdv.nom_responsable:'',
+                                            action: render_action(o.id,o.typeVisite.libelle)
+                                        }
+                                rows.push(obj);
+                            }
+                            data.aaData = rows;
+                            callback(data);
+                        }})
+                },
+
+                "columns": [
+                    { "data": function(d){return d.status} },
+                    { "data": function(d){return d.date} },
+                    { "data": function(d){return d.typeVisite} },
+                    { "data": function(d){return d.acteur} },
+                    { "data": function(d){return d.pdv_type_pdv} },
+                    { "data": function(d){return d.pdv_nom_commercial} },
+                    { "data": function(d){return d.pdv_numero_tete_pont} },
+                    { "data": function(d){return d.pdv_entiteControle} },
+                    { "data": function(d){return d.pdv_nom_responsable} },
+                    { "data": function(d){return d.action} },
+                ]
+            });
+
+        });
+
+    </script>
+
+     <style>
+            .dataTables_scrollHeadInner , .dataTable {width:100% !important;}
+     </style>
+     <nav role="navigation" aria-labelledby="breadcrumb-intro-3">
+         <ol class="breadcrumb">
+             <li class="breadcrumb-item"><a href="{{path ('prevalisation')}}">Délocalisation\Infiltration</a></li>
+             <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{tab}}</li>
+         </ol>
+     </nav>
+     <div class="p-3 mb-2 bg-primary page-current">Délocalisation\Infiltration </div>
+     <div class="main-content container-fluid">
+         <div class="page-title">
+             <ul class="nav nav-tabs" id="myTab" role="tablist">
+                 <li class="nav-item2" role="presentation">
+                     <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('prevalisation')}}">Liste des visites</a>
+                 </li>
+                 {% if tab is same as( 'detailprevalidation' ) %}
+                     <li class="nav-item" role="presentation" style="display:{% if tab == "detailprevalidation" %}block {% else %}none{% endif %}">
+                         <a class="nav-link active" href="{{path ('detailprevalidationfiche',{'id':dataSelect['id']})}}">Détail de la visite</a>
+                     </li>
+                 {% endif %}
+             </ul>
+             <div class="tab-content" id="myTabContent">
+                 <!-- Liste des formulaires  -->
+                 <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                     {% if databd is defined  %}
+                         <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                             <form method="POST" action="">
+                                 <div class="form-row">
+                                 {# {{dump(acteur)}} #}
+                                     <div class="form-group col-md-4">
+                                         <label> Acteur </label>
+                                        <input type="text" id="acteur" name="nom_prenoms" class="form-control majuscule" >
+                                     </div>
+                                    <div class="form-group col-md-2">
+                                        <label>Statut</label>
+                                        <select class="custom-select" id="status" name="status">
+                                            <option value="">Choisir un statut</option>
+                                            <option value="1">VALIDER</option>
+                                            <option value="2">INVALIDER</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-2">
+                                        <label>Numéro PDV</label>
+                                        <input type="number" id="numPDV" class="form-control majuscule" >
+                                    </div>
+                                     <div class="form-group col-md-2">
+                                         <label>Date début</label>
+                                         <input type="date" id="datedebut" name="datedebut" class="form-control majuscule">
+                                     </div>
+                                     <div class="form-group col-md-2">
+                                         <label>Date de fin</label>
+                                         <input type="date" id="datefin" name="datefin" class="form-control majuscule">
+                                     </div>
+                                 </div>
+                                 <div class="form-row justify-content-center">
+                                     <div class="form-group col-md-2">
+                                         <button type="button" id="submit_form"  class="btn btn-primary">Rechercher</button>
+                                     </div>
+                                     <div class="form-group col-md-2">
+                                         <a class="btn btn-success" href="{{path ('prevalisation')}}" role="button">Annuler la recherche</a>
+                                     </div>
+                                 </div>
+                             </form>
+                         </div>
+                         <table id="visitePrevalidation" class="table table-hover display">
+                             <thead>
+                             <tr>
+                                 <th class="text-center">Status</th>
+                                 <th class="text-center">Date du contrôle</th>
+                                 <th class="text-center">Type de visite</th>
+                                 <th class="text-center">Contrôleur</th>
+                                 <th class="text-center">Type de PDV</th>
+                                 <th class="text-center">Nom Commercial</th>
+                                 <th class="text-center">Numéro TP</th>
+                                 <th class="text-center">Entité Contrôlé</th>
+                                 <th class="text-center">Nom du Gérant</th>
+                                 <th class="text-center">Action</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                             </tbody>
+                             <tfoot>
+                             </tfoot>
+                         </table>
+                    
+                     {% endif %}
+                 </div>
+
+                 <!-- détail de la visite -->
+                 <div class="tab-pane fade {% if tab == "detailprevalidation" %}show active{% endif %}" id="detailprevalidation" role="tabpanel" aria-labelledby="detailprevalidation-tab">
+                     {% if tab == "detailprevalidation"  %}
+                         {% if dataSelect is defined %}
+                             <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                                 <table  class="table table-hover display">
+                                     <thead>
+                                     <tr>
+                                         <th>VISITE EFFECTUEE</th>
+                                         <th style="color: red">SIGNATURE :</th>
+                                         <th>CONTROLEUR</th>
+                                         <th>GERANT</th>
+                                         <th>NUMERO PDV</th>
+                                         <th>CODE DE VALIDATION</th>
+                                     </tr>
+                                     </thead>
+                                     <tbody>
+                                     <tr>
+                                         <td>
+                                             <label>Type de visite éffectué : </label> {{ dataSelect['typeVisite']['libelle'] }} <br>
+                                             <label>Date : </label> {{ dataSelect['date']|date("d/m/Y H:i:s") }}
+                                         </td>
+                                         <td>
+                                             <label>Nom & Prénoms : </label>  <br>
+                                             <label>Contact : </label> <br>
+                                             <label>Email : </label>
+                                         </td>
+                                         <td>
+                                             {{ dataSelect['acteur']['nom_prenoms'] }} <br>
+                                             {{ dataSelect['acteur']['contact'] }} <br>
+                                             {{ dataSelect['acteur']['email'] }}
+                                         </td>
+                                         <td>
+                                             {% if signature['gerant'] is defined %}  {{ signature['gerant']['nomPrenoms'] }} <br>
+                                                 {{ signature['gerant']['contact'] }} {% else %} Aucune données {% endif %}
+                                         </td>
+                                         <td>
+                                             {% if signature['numeroPdv'] is defined %} {{ signature['numeroPdv']}} {% else %} Aucune données {% endif %}
+                                         </td>
+                                         <td>
+                                             {% if signature['code'] is defined %} {{ signature['code']}} {% else %} Aucune données {% endif %}
+                                         </td>
+                                     </tr>
+                                     </tbody>
+                                 </table>
+                                 {% if dataSelect['motive'] is not null %}
+                                     <br>
+                                     <div class="form-row">
+                                         <div class="col-sm-12" style="color: red;font-weight: bold;">
+                                             <label>Motif de rejet : </label> {{ dataSelect['motive'] }}
+                                         </div>
+                                     </div>
+                                     <br>
+                                 {% endif %}
+                                <div class="form-row justify-content-center">
+                                    <button type="button"  style="margin-right: 10px" class="btn btn-info float-left" data-toggle="modal" data-target="#invalidationVisite" data-whatever="{{ path ('invaliderform',{'id':dataSelect['id']}) }},Invalidation">Invalider</button>
+                                    <button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('validerform',{'id':dataSelect['id']}) }},Validation,valider,cette visite de contrôle">Valider</button>
+                                </div>
+                             </div>
+                             <br>
+                                {% set cpt = 1 %}
+                             <table id="srollTable">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2">N</th>
+                                        <th class="text-center">Questions</th>
+                                        <td class="text-center"></td>
+                                        <th class="text-center">Réponses</th>
+                                    </tr>
+                                    <tr>     
+                                        <th>
+                                                Nom de l'entité contrôlée : <span style="color: red">{{ dataSelect['pdv']['entiteControle'] }}</span><br>
+                                                Numéro puce PDV OM : <span style="color: red">{{ dataSelect['pdv']['numero_pdv'] }}</span>
+                                        </th>
+                                        <th>
+                                                Ville ou Commune : <span style="color: red">{{ dataSelect['pdv']['ville']['libelle'] }}</span><br>
+                                                Localisation précise : <span style="color: red">{{ dataSelect['pdv']['initialAdresse'] }}</span>
+                                        </th>
+                                        <th>
+                                            Nom Grossiste/Indépendant/ : <span style="color: red">{{ dataSelect['pdv']['type_pdv']['libelle'] }}</span><br>
+                                            Numéro tête de pont : <span style="color: red">{{ dataSelect['pdv']['numero_tete_pont'] }}</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>0</td>
+                                        <td class="text-center">Questions</td>
+                                        <td class="text-center"></td>
+                                        <td class="text-center">Réponses</td>
+                                    </tr>
+                                    {% for sections in dataSelect['response']['sections'] %}
+                                        {% for sousSections in sections['sousSections'] %}
+                                            {% for paragraphes in sousSections['paragraphes'] %}
+                                                <tr style="background-color: red">
+                                                    <td>{{ cpt }}</td>
+                                                    <td>{{ paragraphes['titre'] }}</td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+
+                                                {% for questions in paragraphes['questions'] %}
+
+                                                    <tr>
+                                                        <td>{{ cpt }}</td>
+                                                        <td>{{ questions['label'] }}</td>
+                                                        <td></td>
+                                                        <td>{{ questions['reponse'] }}</td>
+                                                    </tr>
+
+                                                {% endfor %}
+                                                {% set cpt = cpt + 1 %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                </tbody>
+                             </table>
+                             <br><br>
+                             <div class="form-row">
+                                 <div class="col-sm-12">
+                                     <label style="color: red;font-weight: bold;">Observation : </label> {{ dataSelect['response']['observation_agt'] }}
+                                 </div>
+                             </div>
+                             <br><br>
+                             {% for image in images %}
+                                 <img alt="Image" src="{{ base_64_prefix }}{{image['base64_image']}}" data-toggle="tooltip" data-placement="top" title="{{ image['image_name'] }}" class="preview_document" style="width:18%; height: 200px" data-toggle="tooltip" data-placement="top" title=""/>
+                             {% endfor %}
+                         {% endif %}
+                     {% endif %}
+                 </div>
+             </div>
+         </div>
+     </div>
+ {% endblock %}

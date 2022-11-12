@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+     <style>
+         #map {
+             height: 600px;
+         }
+     </style>
+     <nav role="navigation" aria-labelledby="breadcrumb-intro-3" xmlns="http://www.w3.org/1999/html">
+         <ol class="breadcrumb">
+             <li class="breadcrumb-item"><a href="">Reporting</a></li>
+             <li class="breadcrumb-item"><a href="{{path ('historiques')}}">Géolocalisation PDV</a></li>
+             <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{onglet}}</li>
+         </ol>
+     </nav>
+     <div class="p-3 mb-2 bg-primary page-current">GEOLOCALISATION PDV</div>
+     <div class="main-content container-fluid">
+         <div class="page-title">
+             <ul class="nav nav-tabs" id="myTab" role="tablist">
+                 <li class="nav-item" role="presentation">
+                     <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('geolocalisationcontrole')}}">PDV Contrôlés</a>
+                 </li>
+                 <li class="nav-item" role="presentation">
+                     <a class="nav-link {% if tab is same as( 'lister2' ) %} active{% endif %}" href="{{path ('geolocalisationnoncontrole')}}">PDV non Contrôlés</a>
+                 </li>
+             </ul>
+             <div class="tab-content" id="myTabContent">
+                 <!-- Liste des PDV contrôlés  -->
+                 <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                     {% if tab == "lister" %}
+                         <div id="map"></div>
+                     {% endif %}
+                 </div>
+                 <!-- Liste des PDV non contrôlés  -->
+                 <div class="tab-pane fade {% if tab == "lister2" %}show active{% endif %}" id="ajouter" role="tabpanel" aria-labelledby="ajouter-tab">
+                     {% if tab == "lister2" %}
+                         <div id="map"></div>
+                     {% endif %}
+                 </div>
+
+             </div>
+         </div>
+     </div>
+
+ {% endblock %}

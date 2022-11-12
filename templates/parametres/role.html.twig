@@ -1,0 +1,232 @@
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+    <nav role="navigation" aria-labelledby="breadcrumb-intro-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="">Gestion des paramétres</a></li>
+            <li class="breadcrumb-item"><a href="{{path ('role')}}">Rôles</a></li>
+            <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{tab}}</li>
+        </ol>
+    </nav>
+     <div class="p-3 mb-2 bg-primary page-current">RÔLES</div>
+    <div class="main-content container-fluid">
+        <div class="page-title">             
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('role')}}">Liste des rôles</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'ajouter' ) %} active{% endif %}" href="{{path ('addrole')}}">Ajouter un rôle</a>
+                </li>
+                {% if dataSelect is defined  %}
+                    <li class="nav-item" role="presentation" style="display:{% if tab == "modifier" %}block {% else %}none{% endif %}">
+                        <a class="nav-link {% if tab is same as( 'modifier' ) %} active{% endif %}" href="{{path ('editrole',{'id':dataSelect['id']})}}">Modifier un rôle</a>
+                    </li>
+                {% endif %}  
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <!-- Liste des roles  -->
+                <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                    {% if databd is defined  %}
+                        <table id="table" class="table table-hover display">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Libelle</th>
+                                    <th class="text-center">Description</th>
+                                    <th class="text-center">Permissions</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in databd|batch(1, 'No item') %}
+                                    <tr>
+                                        {% for data in row %}
+                                             <td class="text-center">{{ data['role']|upper }}</td>
+                                            <td class="text-center">{{ data['description']|upper }}</td>
+                                            <td>
+                                                Liste des actions :    
+                                                {% if data['permissions'] is not null %}                                            
+                                                    {% for permissions in data['permissions'] %}
+                                                         { {{ permissions|upper }} }
+                                                    {% endfor %}
+                                                {% endif %}
+
+                                                <br/>
+                                                Type de visite :
+                                                {% if data['typeVisite'] is not null %}
+                                                    {{ data['typeVisite']|upper }}
+                                                {% endif %}
+                                            </td>
+                                            <td class="td-status text-center">
+                                                 {% if data['activated'] %}
+                                                    <span class="status-actif">ACTIF</span>
+                                                {% else %}
+                                                    <span class="status-inactif">INACTIF</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="dropdown">
+                                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        Action
+                                                    </button>
+                                                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                                        <a class="dropdown-item" href="{{ path ('editrole',{'id':data['id']}) }}">Modifier</a>
+                                                        {% if data['activated'] %}
+                                                            <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('desactiverrole',{'id':data['id']}) }},Désactivation,désactiver,ce rôle : {{ data['role']|upper }}">Désactiver</button>
+                                                        {% else %}
+                                                            <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('activerrole',{'id':data['id']}) }},Activation,activer,ce rôle : {{ data['role']|upper }}">Activer</button>
+                                                        {% endif %}
+                                                        <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('delrole',{'id':data['id']}) }},Suppression,supprimer,ce rôle : {{ data['role']|upper }}">Supprimer</button>
+                                                    </div>
+                                                </div>  
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %} 
+                            </tbody>              
+                            <tfoot>
+                            </tfoot> 
+                        </table>
+                    {% endif %}  
+                </div>
+                <!-- ajouter un role  -->
+                <div class="tab-pane fade {% if tab == "ajouter" %}show active{% endif %}" id="ajouter" role="tabpanel" aria-labelledby="ajouter-tab">                    
+                    {% if typevisite is defined  %}
+                        <form method="POST" action="{{path ('addrole')}}">
+                            <div class="form-row">
+                                <label class="col-2 text-right">Libelle <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <input type="text" name="libelle" class="form-control majuscule" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Liste des actions <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <select class="action" name="action[]" multiple="multiple">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Types de visite</label>
+                                <div class="form-group col-md-4">
+                                    <select class="custom-select" name="listevisite" >
+                                        <option value="">Choisir un type</option>
+                                        {% for colonne in typevisite %}
+                                            {% if colonne['actived'] %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type de connexion <span style="color: red">*</span></label>
+                                <div class="form-group col-sm-6">
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="mobile" id="import1" checked>
+                                        <label class="custom-control-label" for="import1"><small>Mobile</small></label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="web" id="import2">
+                                        <label class="custom-control-label" for="import2"><small>Backoffice</small></label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="mobileWeb" id="import3">
+                                        <label class="custom-control-label" for="import3"><small>Mobile & Backoffice</small></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Description </label>
+                                <div class="form-group col-md-6">
+                                    <textarea class="form-control majuscule" name="description" rows="5" cols="50"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('role') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <button type="submit"  class="btn btn-primary mb-2">Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>              
+                    {% endif %}  
+                </div>
+                <!-- modifier un role  -->
+                <div class="tab-pane fade {% if tab == "modifier" %}show active{% endif %}" id="modifier" role="tabpanel" aria-labelledby="modifier-tab">
+                    {% if dataSelect is defined  %}
+                        <form action="{{path ('editrole',{'id':dataSelect['id']})}}" method="POST" enctype="multipart/form-data">
+                        <div class="form-row">
+                            <label class="col-2 text-right">Libelle <span style="color: red">*</span></label>
+                            <div class="form-group col-md-6">
+                                <input type="text" name="libelle" value="{{ dataSelect['role'] }}"  class="form-control majuscule" required>
+                            </div>
+                        </div>
+                        <!-- liste des actions -->
+                        <div class="form-row">
+                            <label class="col-2 text-right">Liste des actions <span style="color: red">*</span></label>
+                            <div class="form-group col-md-6">
+                                <select id="actionliste" name="action[]" multiple="multiple">
+                                </select>
+                            </div>
+                        </div>
+                        <!-- types de visites -->
+                        <div class="form-row">
+                            <label class="col-2 text-right">Types de visite</label>
+                            <div class="form-group col-md-4">
+                                <select class="custom-select" name="listevisite" >
+                                    <option value="">Choisir un type</option>
+                                    {% for colonne in typevisite %}
+                                        {% if colonne['actived'] %}
+                                            <option {% if dataSelect['type_visite'] is not null %} {% if colonne['id'] == dataSelect['type_visite']['id']  %} selected {% endif %}{% endif %} value="{{colonne['id']}}">{{colonne['libelle']}}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type de connexion <span style="color: red">*</span></label>
+                                <div class="form-group col-sm-6">
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="mobile" id="importupdate1" {% if dataSelect['typeCompte'] is same as ('mobile') %} checked {% endif %}>
+                                        <label class="custom-control-label" for="importupdate1"><small>Mobile</small></label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="web" id="importupdate2" {% if dataSelect['typeCompte'] is same as ('web') %} checked {% endif %}>
+                                        <label class="custom-control-label" for="importupdate2"><small>Backoffice</small></label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="mobileWeb" id="importupdate3" {% if dataSelect['typeCompte'] is same as ('mobileWeb') %} checked {% endif %}>
+                                        <label class="custom-control-label" for="importupdate3"><small>Mobile & Backoffice</small></label>
+                                    </div>
+                                </div>
+                            </div>
+                        <div class="form-row">
+                            <label class="col-2 text-right">Description </label>
+                            <div class="form-group col-md-6">
+                                <textarea class="form-control majuscule" name="description" rows="5" cols="50">{{ dataSelect['description'] }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-row justify-content-center">
+                            <div class="form-group col-md-2">
+                                <a href="{{ path ('role') }}" class="btn btn-secondary">
+                                    Annuler
+                                </a>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <button type="submit"  class="btn btn-primary mb-2">Enregistrer</button>
+                            </div>
+                        </div>
+                    </form>              
+                    {% endif %}  
+                </div>
+            </div>      
+        </div> 
+    </div> 
+{% endblock %}

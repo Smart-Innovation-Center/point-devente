@@ -1,0 +1,681 @@
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+    {% if filtre is defined %}
+        <style>
+            .dataTables_scrollHeadInner , .dataTable {width:100% !important;}
+        </style>
+        <script>
+             //appliquer la librairie dataTable sur le tableau de la page actuelle ainsi que les different bouton de telechargement
+             bouton= [
+                 {
+                     extend: 'copy',
+                     exportOptions: {
+                         columns: ':visible'
+                     }
+                 },
+                 {
+                     extend: 'csv',
+                     exportOptions: {
+                         columns: ':visible'
+                     }
+                 },
+                 {
+                     extend: 'excel',
+                     exportOptions: {
+                         columns: ':visible'
+                     }
+                 },
+                 {
+                     extend: 'pdf',
+                     exportOptions: {
+                         columns: ':visible'
+                     }
+                 },
+                 {
+                     extend: 'print',
+                     exportOptions: {
+                         columns: ':visible'
+                     }
+                 },
+                 'colvis'
+             ];
+
+             function affiche_status(data){
+                 if(data !== undefined){
+                     if(data){
+                         return '<span class="status-actif">ACTIF</span>';
+                     }
+                     else{
+                         return '<span class="status-inactif">INACTIF</span>';
+                     }
+                 }
+                 return '';
+             }
+
+             function getRoles(roles){
+                 if(roles != undefined){
+                     if(roles.length > 0){
+                         var rl = [];
+                         for(var i = 0; i<roles.length;i++){
+                             rl.push('{'+roles[i].toUpperCase()+'}');
+                         }
+                         return rl.join(' ');
+                     }
+                     return '';
+                 }
+                 return '';
+             }
+
+             function render_action(id , actived , accountLocked, nom_prenoms){
+                var route1 = '{{path ("editacteur",{"id":"xxx"})}}'.replace('xxx',''+id+'');
+                var route2 = '{{path ("reinitialiseracteur",{"id":"xxx"})}}'.replace('xxx',''+id+'');
+                var route3 = '{{path ("desactiveracteur",{"id":"xxx"})}}'.replace('xxx',''+id+'');
+                var route4 = '{{path ("activeracteur",{"id":"xxx"})}}'.replace('xxx',''+id+'');
+                var route5 = '{{path ("debloqueacteur",{"id":"xxx"})}}'.replace('xxx',''+id+'');
+                var route6 = '{{path ("delacteur",{"id":"xxx"})}}'.replace('xxx',''+id+'');
+                var route7 = '{{path ("acteurPdv",{"id":"xxx"})}}'.replace('xxx',''+id+'');
+
+                 return action_btn = '<div class="dropdown" id="addFix" onclick="myFunction()">'+
+                     '    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Action</button>'+
+                     '    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">'+
+                     '        <a class="dropdown-item" href="'+route1+'">Modifier</a>'+
+                     '        <a class="dropdown-item" href="'+route7+'">Fiche recap</a>'+
+                     '        <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="'+route2+',Réinitialisation,réinitialiser le mot de passe de,cet acteur : '+nom_prenoms+' ">Réinitialiser le mot de passe</button>'+
+                     ((actived)?'<button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="'+route3+',Désactivation,désactiver,cet acteur : '+nom_prenoms+'">Désactiver</button>':'<button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="'+route4+',Activation,activer,cet acteur : '+nom_prenoms+' ">Activer</button>')+
+                     ((accountLocked)?'<button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="'+route5+',Débloquer,débloquer,cet acteur : '+nom_prenoms+'">Débloquer</button>':'')+
+                     '<button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="'+route6+',Suppression,supprimer,cet acteur : '+nom_prenoms+'">Supprimer</button>'+
+                     '    </div>'+
+                     '</div>';
+             }
+
+             $(document).ready(function () {
+                 $('#ActeursTable').dataTable({
+                     "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                     "iDisplayLength": 50,
+                     'bProcessing': true,
+                     'bServerSide': true,
+                     'sAjaxSource': '{{ path('getActeur') }}',
+                     "url": "data.json",
+                     "dataSrc": "tableData",
+                     dom: 'Bfrtip',
+                     "scrollX": true,
+                     buttons:bouton,
+                     'fnServerData': function (source, data, callback) {
+                         $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                 var rows = [];
+                                 for(var i = 0; i<data.aaData.length ; i++){
+                                     const o = data.aaData[i];
+                                     const obj = {
+
+                                         nom_prenoms:o.nom_prenoms.replace(/�+/g, ' \' ' ).toUpperCase(),
+                                         contact: (o.contact !== undefined)?o.contact:'',
+                                         email: (o.email !== undefined)?o.email:'',
+                                         hierarchy: (o.hierarchy !== undefined && o.hierarchy !== null && o.hierarchy !== "" && o.hierarchytypeActeur !== "" && o.hierarchytypeActeur !== undefined && o.hierarchytypeActeur !== null)?o.hierarchy.toUpperCase()+' {'+o.hierarchytypeActeur.toUpperCase()+'}':'A/N/A',
+                                         type_acteur: (o.type_acteur !== undefined && o.type_acteur !== null)?o.type_acteur.toUpperCase():'',
+                                         roles:getRoles(o.roles),
+                                         status: affiche_status(o.actived),
+                                         action: render_action(o.id , o.actived , o.accountLocked, o.nom_prenoms)
+                                     }
+                                     rows.push(obj);
+                                 }
+                                 data.aaData = rows;
+                                 callback(data);
+                             }})
+                     },
+                     "columns": [
+                         { "data": function(d){return d.nom_prenoms} },
+                         { "data": function(d){return d.contact} },
+                         { "data": function(d){return d.email} },
+                         { "data": function(d){return d.hierarchy} },
+                         { "data": function(d){return d.type_acteur} },
+                         { "data": function(d){return d.roles} },
+                         { "data": function(d){return d.status} },
+                         { "data": function(d){return d.action} },
+                     ]
+                 });
+             });
+
+             $(document).on('click','#submit_form',{passive:true},function () {
+                 if ( $.fn.dataTable.isDataTable('#ActeursTable') ) {
+                     $('#ActeursTable').DataTable().destroy();
+                 }
+
+                 var nom_prenoms = $('#nom_prenoms').val();
+                 var contactActeur = $('#contactActeur').val();
+                 var partenaire = $('#partenaire').val();
+                 var emailActeur = $('#emailActeur').val();
+                 var typeacteurControleur = $('#typeacteurControleur').val();
+                 var status = $('#status').val();
+                 var data = "nom_prenoms="+nom_prenoms+"&contact="+contactActeur+"&email="+emailActeur+"&typeActeur="+typeacteurControleur+"&partenaire="+partenaire+"&actived="+status+"";
+
+                 var url = '{{ path("getSearchActeur", {'id': 'article_id'}) }}';
+                 url = url.replace("article_id", data);
+
+                 $('#ActeursTable').dataTable({
+                     "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "tout"]],
+                     "iDisplayLength": 50,
+                     'bProcessing': true, 'bServerSide': true,
+                     'sAjaxSource': url,
+                     "url": "data.json",
+                     "dataSrc": "tableData",
+                     dom: 'Bfrtip',
+                     "scrollX": true,
+                     buttons:bouton,
+                     'fnServerData': function (source, data, callback) {
+                         $.ajax({'dataType': 'json', 'type': 'get', 'url': source, 'data': data, 'success': function(data){
+                                 var rows = [];
+                                 for(var i = 0; i<data.aaData.length ; i++){
+                                     const o = data.aaData[i];
+                                     // console.log(data)
+                                     const obj = {
+                                         nom_prenoms: o.nom_prenoms.toUpperCase(),
+                                         contact: (o.contact !== undefined)?o.contact:'',
+                                         email: (o.email !== undefined)?o.email:'',
+                                         hierarchy: (o.hierarchy !== undefined && o.hierarchy !== null && o.hierarchytypeActeur !== undefined && o.hierarchytypeActeur !== null)?o.hierarchy.toUpperCase()+'A/N'+o.hierarchytypeActeur.toUpperCase()+'/A':'',
+                                         type_acteur: (o.type_acteur !== undefined && o.type_acteur !== null)?o.type_acteur.toUpperCase():'',
+                                         roles:getRoles(o.roles),
+                                         status: affiche_status(o.actived),
+                                         action: render_action(o.id , o.actived , o.accountLocked, o.nom_prenoms)
+                                     }
+                                     rows.push(obj);
+                                 }
+                                 data.aaData = rows;
+                                 callback(data);
+                             }})
+                     },
+
+                     "columns": [
+                         { "data": function(d){return d.nom_prenoms} },
+                         { "data": function(d){return d.contact} },
+                         { "data": function(d){return d.email} },
+                         { "data": function(d){return d.hierarchy} },
+                         { "data": function(d){return d.type_acteur} },
+                         { "data": function(d){return d.roles} },
+                         { "data": function(d){return d.status} },
+                         { "data": function(d){return d.action} },
+                     ]
+                 });
+
+             });
+        </script>
+    {% endif %}
+
+    <nav role="navigation" aria-labelledby="breadcrumb-intro-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="##">Gestion des acteurs</a></li>
+            <li class="breadcrumb-item"><a href="{{path ('acteur')}}">Acteurs</a></li>
+            <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{tab}}</li>
+        </ol>
+    </nav>
+     <div class="p-3 mb-2 bg-primary page-current">ACTEURS</div>
+    <div class="main-content container-fluid">
+        <div class="page-title">             
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('acteur')}}">Liste des acteurs</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'ajouter' ) %} active{% endif %}" href="{{path ('addacteur')}}">Ajouter un acteur</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link {% if tab is same as( 'importer' ) %} active{% endif %}" href="{{path ('importacteur')}}">Importer des acteurs</a>
+                </li>
+                {% if dataSelect is defined  %}
+                <li class="nav-item" role="presentation" style="display:{% if tab == "modifier" %}block {% else %}none{% endif %}">
+                    <a class="nav-link {% if tab is same as( 'modifier' ) %} active{% endif %}" href="{{path ('editacteur',{'id':dataSelect['id']})}}">Modifier un acteur</a>
+                </li>
+                {% endif %}  
+                {% if dataActeurPdv is defined  %}
+                <li class="nav-item" role="presentation" style="display:{% if tab == "pdvs" %}block {% else %}none{% endif %}">
+                    <a class="nav-link {% if tab is same as( 'pdvs' ) %} active{% endif %}" href="{{path ('acteurPdv',{'id':idActeur})}}">Fiche Kanel de cet acteur</a>
+                </li>
+                {% endif %} 
+            </ul>
+            <div class="tab-content" id="myTabContent">
+                <!-- Liste des acteurs  -->
+                <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                    {% if databd is defined  %}
+                        <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                            <form method="POST" action="" id>
+                                <div class="form-row justify-content-center">
+                                    <div class="form-group col-md-4">
+                                        <label>Nom et/ou Prénoms </label>
+                                        <input type="text" id="nom_prenoms" name="nom_prenoms" {% if saisie is defined %} value="{{ saisie['nom_prenoms']}}" {% endif %} class="form-control majuscule" placeholder="Nom et/ou Prénoms">
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>Email </label>
+                                        <input type="email" id="emailActeur" name="email" {% if saisie is defined %} value="{{ saisie['email']}}" {% endif %} class="form-control" placeholder="Email">
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>Contact </label>
+                                        <input type="number" id="contactActeur" name="contact" {% if saisie is defined %} value="{{ saisie['contact']}}" {% endif %} class="form-control majuscule" placeholder="Contact">
+                                    </div>
+                                </div>
+                                <div class="form-row justify-content-center">
+                                    <div class="form-group col-md-3">
+                                        <label>Partenaires</label>
+                                        <select class="custom-select" id="partenaire" name="partenaire" {% if saisie is defined %} value="{{ saisie['partenaire']}}" {% endif %}>
+                                            <option value="">Choisir un partenaire</option>
+                                            {% for colonne in partenaire %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>Type Contrôleur </label>
+                                        <select class="custom-select" id="typeacteurControleur" name="typeacteur" {% if saisie is defined %} value="{{ saisie['typeacteur']}}" {% endif %}>
+                                            <option value="">Choisir un type</option>
+                                            {% for colonne in typeacteur %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>Statut</label>
+                                        <select class="custom-select" id="status" name="status" {% if saisie is defined %} value="{{ saisie['status']}}" {% endif %}>
+                                            <option value="">Choisir un statut</option>
+                                            {% for colonne in statut %}
+                                                <option value="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-row justify-content-center">
+                                    <div class="form-group col-md-2">
+                                        <button type="button" id="submit_form" class="btn btn-primary">Rechercher</button>
+                                    </div>
+                                    <div class="form-group col-md-2">
+                                        <a class="btn btn-success" href="{{path ('acteur')}}" role="button">Annuler la recherche</a>
+                                    </div>
+                                </div>
+                            </form> 
+                        </div>
+                        <table id="ActeursTable" class="table table-hover display">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Nom & Prénoms</th>
+                                    <th class="text-center">Contact</th>
+                                    <th class="text-center">Email</th>
+                                    <th class="text-center">Responsable Hierarchique</th>
+                                    <th class="text-center">Type Contrôleur</th>
+                                    <th class="text-center">Rôles</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+
+                            </tbody>
+                            <tfoot>
+                            </tfoot> 
+                        </table>
+                    {% endif %}
+                </div>
+                <!-- ajouter un acteurs  -->
+                <div class="tab-pane fade {% if tab == "ajouter" %}show active{% endif %}" id="ajouter" role="tabpanel" aria-labelledby="ajouter-tab">
+                    {% if tab == "ajouter" %}
+                        <form method="POST" action="{{path ('addacteur')}}">
+                            <div class="form-row">
+                                <label class="col-2 text-right">Nom & Prénom(s) <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <input type="text" name="nom_prenoms" class="form-control majuscule" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Contact <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <input type="number" name="contact" pattern="[0-9]+" class="form-control majuscule" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right"> Email <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <input type="email" name="email" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type Contôleur <span style="color: red">*</span></label>
+                                <div class="form-group col-md-3">
+                                    <select class="custom-select listeActeur" onChange="listeActeurs()" required>
+                                        <option value="">Sélectionner un type</option>
+                                        {% for colonne in typeacteur %}
+                                            <option value="{{ path ('listeacteurs',{'id':colonne['id']}) }}" data-typeselect="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <input type="hidden"  name="typeacteur" id="typeacteurSelect" >
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Responsable hierarchique</label>
+                                <div class="form-group col-md-3">
+                                    <select class="custom-select" id="responsableH" name="hierarchy" >
+                                        <option value="">Sélectionner un acteur</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type de connexion <span style="color: red">*</span></label>
+                                <div class="form-group col-sm-6">
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="mobile" id="connexion_1" checked>
+                                        <label class="custom-control-label" for="connexion_1"><small>Mobile</small></label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="web" id="connexion_2">
+                                        <label class="custom-control-label" for="connexion_2"><small>Backoffice</small></label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="mobileWeb" id="connexion_3">
+                                        <label class="custom-control-label" for="connexion_3"><small>Mobile & Backoffice</small></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right"> Username </label>
+                                <div class="form-group col-md-3">
+                                    <input type="text" name="username" class="form-control majuscule" >
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Rôle </label>
+                                <div class="form-group col-md-6">
+                                    <select class="role" name="roles[]" multiple="multiple">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('acteur') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <button type="submit"  class="btn btn-primary mb-2">Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>
+
+                    {% endif %}
+                </div>
+                <!-- importer des acteurs  -->
+                <div class="tab-pane fade {% if tab == "importer" %}show active{% endif %}" id="importer" role="tabpanel" aria-labelledby="importer-tab">
+                   {% if tab == "importer" %}
+                        <form  action="{{path ('importacteur')}}" method="POST" enctype="multipart/form-data">
+
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a style="width: 300px" href="{{ asset('assets/files/model_import_acteur.xlsx') }}" target="_blank" class="btn btn-primary mb-2">Cliquer pour télécharger un model de fichier d'importation</a>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row justify-content-center" style="margin-bottom: 2%">
+                                <span class="status-actif" style="font-size: larger;text-align: center" >Importer le fichier en vous basant sur l'image au format CSV ( Séparateur: point-virgule ) <br> la colonne ID reste vide</span>
+                            </div>
+                            
+                            <div class="form-row justify-content-center">
+                                <label class="col-2 text-right">Type Contrôleur <span style="color: red">*</span></label>
+                                <div class="form-group col-md-3">
+                                    <select class="custom-select listeActeur" onChange="listeActeurs()" required>
+                                        <option value="">Sélectionner un type</option>
+                                        {% for colonne in typeacteur %}
+                                            <option value="{{ path ('listeacteurs',{'id':colonne['id']}) }}" data-typeselect="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <input type="hidden"  name="typeacteur" id="typeacteurSelect" >
+                                <label class="col-3 text-right"></label>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <label class="col-2 text-right">Responsable hierarchique</label>
+                                <div class="form-group col-md-3">
+                                    <select class="custom-select" id="responsableH" name="hierarchy" >
+                                        <option value="">Sélectionner un acteur</option>
+                                    </select>
+                                </div>
+                                <label class="col-3 text-right"></label>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <label class="col-2 text-right">Type de connexion <span style="color: red">*</span></label>
+                                <div class="form-group col-sm-6">
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="mobile" id="import1" checked>
+                                        <label class="custom-control-label" for="import1"><small>Mobile</small></label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="web" id="import2">
+                                        <label class="custom-control-label" for="import2"><small>Backoffice</small></label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="mobileWeb" id="import3">
+                                        <label class="custom-control-label" for="import3"><small>Mobile & Backoffice</small></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <label class="col-2 text-right">Rôle</label>
+                                <div class="form-group col-md-6">
+                                    <select class="role" name="roles[]" multiple="multiple">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <label class="col-2 text-right">Fichier <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <input type="file" name="listeacteurs" class="custom-file" accept=".csv" required>
+                                </div>
+                            </div>
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('acteur') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>
+                                </div>
+                                <div class="form-group col-md-2">
+                                    <button type="submit" class="btn btn-primary mb-2">Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>
+                   {% endif %}
+                </div>
+                <!-- modifier un acteur  -->
+                <div class="tab-pane fade {% if tab == "modifier" %}show active{% endif %}" id="modifier" role="tabpanel" aria-labelledby="modifier-tab">
+                    {% if dataSelect is defined  %}
+                        <form action="{{path ('editacteur',{'id':dataSelect['id']})}}" method="POST" enctype="multipart/form-data">
+                            <div class="form-row">
+                                <label class="col-2 text-right">Nom & Prénom(s) <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <input type="text" name="nom_prenoms" value="{{dataSelect['nom_prenoms']}}" class="form-control majuscule" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Contact <span style="color: red">*</span></label>
+                                <div class="form-group col-md-4">
+                                    <input type="number" name="contact" value="{{dataSelect['contact']}}" class="form-control majuscule" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right"> Email <span style="color: red">*</span></label>
+                                <div class="form-group col-md-6">
+                                    <input type="email" name="email" value="{{dataSelect['email']}}" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type Contrôleur <span style="color: red">*</span></label>
+                                <div class="form-group col-md-3">
+                                    <select class="custom-select listeActeur" onChange="listeActeurs({% if dataSelect['hierarchy'] is not null %} {{ dataSelect['hierarchy']['id'] }} {% endif %})" name="typeacteur" required>
+                                        <option value="">Sélectionner un type</option>
+                                        {% for colonne in typeacteur %}
+                                            <option {% if dataSelect['type_acteur'] is not null %} {% if dataSelect['type_acteur']['id']== colonne['id'] %} selected {% endif %}{% endif %} value="{{ path ('listeacteurs',{'id':colonne['id']}) }}" data-typeselect="{{ colonne['id'] }}">{{ colonne['libelle']|upper }}</option>
+                                        {% endfor %}
+                                    </select>
+
+                                    <script>
+                                        //dhes que la page est charger attendre 300 milli seconde et filtrer les responselba hierachique
+                                        active_responsable_id = '{% if dataSelect['hierarchy'] is not null %} {{ dataSelect['hierarchy']['id'] }} {% endif %}';
+
+                                        $(document).ready(function () {
+                                            setTimeout(function () {
+                                                if (active_responsable_id != '') {
+                                                    listeActeurs(active_responsable_id);
+                                                }
+                                                if(active_responsable_id == ''){
+                                                    listeActeurs();
+                                                }
+
+                                            }, 300);
+                                        });
+                                    </script>
+                                </div>
+                                <input type="hidden"  name="typeacteur" id="typeacteurSelect" >
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Responsable hierarchique</label>
+                                <div class="form-group col-md-3">
+                                    <select class="custom-select" id="responsableH" name="hierarchy">
+                                        <option value="">Sélectionner un acteur</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Type de connexion <span style="color: red">*</span></label>
+                                <div class="form-group col-sm-6">
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="mobile" id="importupdate1" {% if dataSelect['typeCompte'] is same as ('mobile') %} checked {% endif %}>
+                                        <label class="custom-control-label" for="importupdate1"><small>Mobile</small></label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="web" id="importupdate2" {% if dataSelect['typeCompte'] is same as ('web') %} checked {% endif %}>
+                                        <label class="custom-control-label" for="importupdate2"><small>Backoffice</small></label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input class="custom-control-input" type="radio" name="connexion" value="mobileWeb" id="importupdate3" {% if dataSelect['typeCompte'] is same as ('mobileWeb') %} checked {% endif %}>
+                                        <label class="custom-control-label" for="importupdate3"><small>Mobile & Backoffice</small></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right"> Username </label>
+                                <div class="form-group col-md-3">
+                                    <input type="text" name="username" value="{{dataSelect['username']}}" class="form-control majuscule" >
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <label class="col-2 text-right">Rôles </label>
+                                <div class="form-group col-md-6">
+                                    <select id="roleliste" name="roles[]" multiple="multiple">
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row justify-content-center">
+                                <div class="form-group col-md-2">
+                                    <a href="{{ path ('acteur') }}" class="btn btn-secondary">
+                                        Annuler
+                                    </a>
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <button type="submit"  class="btn btn-primary mb-2">Enregistrer</button>
+                                </div>
+                            </div>
+                        </form>
+                    {% endif %}  
+                </div>
+                <!-- Liste des pdv de l'acteur  -->
+                <div class="tab-pane fade {% if tab == "pdvs" %}show active{% endif %} " id="pdvs" role="tabpanel" aria-labelledby="pdvs-tab">
+                    {% if dataActeurPdv is defined  %}
+                        <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                            <table  class="table table-hover display">
+                                <thead>
+                                <tr>
+                                    <th>CONTROLEUR</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>
+                                        <label>Nom & Prénoms : </label> {{ dataActeur['nom_prenoms']  }} <br>
+                                        <label>Contact : </label> {{ dataActeur['contact'] }} <br>
+                                        <label>Email : </label> {{ dataActeur['email'] }}<br>
+                                        <label>Type Contrôleur : </label> {% if dataActeur['type_acteur'] is not null %} {{ dataActeur['type_acteur']['libelle']|upper }} {% endif %}<br>
+
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        {% set cpt = 1 %}
+                        <table id="table" class="table table-hover display">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">N</th>
+                                    <th>
+                                        <label>Nom & Prénoms : <br>
+                                        <label>Contact : <br>
+                                        <label>Email : <br>
+                                        <label>Type Contrôleur : 
+                                    </th>
+
+                                    <th>
+                                        {{ dataActeur['nom_prenoms'] }} <br>
+                                        {{ dataActeur['contact'] }} <br>
+                                        {{ dataActeur['email'] }}<br>
+                                        {% if dataActeur['type_acteur'] is not null %} {{ dataActeur['type_acteur']['libelle']|upper }} {% endif %}
+                                    </th>
+                                    <th colspan="4"></th>
+                                </tr>
+                                <tr>
+                                    <th class="text-center">Type de PDV</th>
+                                    <th class="text-center">Profile</th>
+                                    <th class="text-center">Nom Commercial</th>
+                                    <th class="text-center">Partenaire</th>
+                                    <th class="text-center">Type Contrôleur</th>
+                                    <th class="text-center">Ville</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td></td>
+                                    <td class="text-center">Type de PDV</td>
+                                    <td class="text-center">Profile</td>
+                                    <td class="text-center">Nom Commercial</td>
+                                    <td class="text-center">Partenaire</td>
+                                    <td class="text-center">Type Contrôleur</td>
+                                    <td class="text-center">Ville</td>
+                                </tr>
+                                {% for row in dataActeurPdv|batch(1, 'No item') %}
+                                    <tr>
+                                        {% for data in row %}
+                                            <td>{{ cpt }}</td>
+                                            <td class="text-center">{{ data['type_pdv']|upper }}   
+                                            {# {% if data['type_pdv'] is not null %} {{ data['type_pdv']['libelle']|upper }} {% endif %} #}
+                                            </td>
+                                            <td class="text-center">{{ data['profilePdv']|upper }}</td>
+                                            <td class="text-center">{{ data['nom_commercial']|upper }}</td>
+                                            <td class="text-center">{{ data['partenaire']|upper }}</td>
+                                            <td class="text-center">   
+                                                {% if data['type_acteur'] is not null %}                                         
+                                                    {% for colonne in data['type_acteur'] %}
+                                                    { {{ colonne|upper }} }
+                                                    {% endfor %}
+                                                {% endif %}
+                                                {#{{ data['type_acteur']|upper }}                                         
+                                                 {% for colonne in data['type_acteur'] %}
+                                                   { {{ colonne['libelle']|upper }} }
+                                                {% endfor %} #}
+                                            </td>
+                                            <td class="text-center">{{ data['ville']|upper }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% set cpt = cpt + 1 %}
+                                {% endfor %} 
+                            </tbody>              
+                            <tfoot>
+                            </tfoot> 
+                        </table>
+                    {% endif %}
+                </div>
+            </div>      
+        </div> 
+    </div> 
+{% endblock %}

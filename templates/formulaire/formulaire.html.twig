@@ -1,0 +1,701 @@
+
+{% extends 'base.html.twig' %}
+
+ {% block body %}
+
+     <style>
+         .btn-link:hover , a:hover {
+             color: #f16e00;
+             text-decoration: none !important;
+         }
+
+         .btn-link , a{text-decoration: none !important;}
+         .dropdown-item:focus {
+             color: inherit;
+             text-decoration: none;
+             background-color: inherit;
+         }
+         label.custom-control-label small {
+             position: relative;
+             top: -8px;
+         }
+         .question_item2 , .section_item2 , .paragraph_item2 , .sub_section_item2, .question_item , .section_item , .paragraph_item , .sub_section_item{
+             margin-bottom: 10px;
+         }
+         .text-danger{color:red;}
+
+         .opener{
+             font-size: 25px;
+             padding-right: 5px;
+             padding-left: 5px;
+         }
+     </style>
+     <nav role="navigation" aria-labelledby="breadcrumb-intro-3">
+         <ol class="breadcrumb">
+             <li class="breadcrumb-item"><a href="">Gestion des Formulaires</a></li>
+             <li class="breadcrumb-item"><a href="{{path ('formulaire')}}">Formulaires</a></li>
+             <li class="breadcrumb-item breadcrumb-active" aria-current="location">{{tab}}</li>
+         </ol>
+     </nav>
+     <div class="p-3 mb-2 bg-primary page-current">FORMULAIRE</div>
+     <div class="main-content container-fluid">
+         <div class="page-title">
+             <ul class="nav nav-tabs" id="myTab" role="tablist">
+                 <li class="nav-item" role="presentation">
+                     <a class="nav-link {% if tab is same as( 'lister' ) %} active{% endif %}" href="{{path ('formulaire')}}">Liste des formulaires</a>
+                 </li>
+                 <li class="nav-item" role="presentation">
+                     <a class="nav-link {% if tab is same as( 'ajouter' ) %} active{% endif %}" href="{{path ('addformulaire')}}">Creer un formulaire</a>
+                 </li>
+                 {# <li class="nav-item" role="presentation">
+                     <a class="nav-link {% if tab is same as( 'ajouter2' ) %} active{% endif %}" href="{{path ('addformprevalisation')}}">Creer le formulaire de pré-validation</a>
+                 </li> #}
+                 {% if dataSelect is defined  %}
+                     {# <li class="nav-item" role="presentation" style="display:{% if tab == "modifier2" %}block {% else %}none{% endif %}">
+                         <a class="nav-link {% if tab is same as( 'modifier2' ) %} active{% endif %}" href="{{path ('editformprevalisation',{'id':dataSelect['formulaire']['id']})}}">Modifier le formulaire de pré-validation</a>
+                     </li> #}
+                     <li class="nav-item" role="presentation" style="display:{% if tab == "modifier" %}block {% else %}none{% endif %}">
+                         <a class="nav-link {% if tab is same as( 'modifier' ) %} active{% endif %}" href="{{path ('editformulaire',{'id':dataSelect['formulaire']['id']})}}">Modifier un formulaire</a>
+                     </li>
+                 {% endif %}
+             </ul>
+             <div class="tab-content" id="myTabContent">
+                 <!-- Liste des formulaires  -->
+                 <div class="tab-pane fade {% if tab == "lister" %}show active{% endif %} " id="lister" role="tabpanel" aria-labelledby="lister-tab">
+                     {% if databd is defined  %}
+                         <div class="shadow-lg p-3 mb-5 bg-white rounded">
+                             <form method="POST" action="{{path ('rechercheformulaire')}}">
+                                 <div class="form-row">
+                                     <div class="form-group col-md-3">
+                                         <label>Type visite </label>
+                                         <select class="custom-select" name="typevisite" {% if saisie is defined %} value="{{ saisie['typevisite']}}" {% endif %}>
+                                             <option value="">Choisir un type</option>
+                                             {% for colonne in typevisite %}
+                                                 <option value="{{ colonne['id'] }}" >{{ colonne['libelle'] }}</option>
+                                             {% endfor %}
+                                         </select>
+                                     </div>
+                                     <div class="form-group col-md-2">
+                                         <label>Statut</label>
+                                         <select class="custom-select" name="status" {% if saisie is defined %} value="{{ saisie['status']}}" {% endif %}>
+                                             <option value="">Choisir un statut</option>
+                                             {% for colonne in statut %}
+                                                 <option value="{{ colonne['id'] }}" >{{ colonne['libelle'] }}</option>
+                                             {% endfor %}
+                                         </select>
+                                     </div>
+                                     <div class="form-group col-md-2" style="padding-top: 37px;">
+                                         <button type="submit"  class="btn btn-primary">Rechercher</button>
+                                     </div>
+                                     <div class="form-group col-md-2" style="padding-top: 37px;">
+                                         <a class="btn btn-success" href="{{path ('formulaire')}}" role="button">Annuler la recherche</a>
+                                     </div>
+                                 </div>
+                             </form>
+                         </div>
+                         <table id="table" class="table table-hover display">
+                             <thead>
+                             <tr>
+                                 <th class="text-center">Type de visite</th>
+                                 <th class="text-center">Formulaires</th>
+                                 <th class="text-center">Status</th>
+                                 <th class="text-center">Action</th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                                 {% for row in databd|batch(1, 'No item') %}
+                                     <tr>
+                                         {% for data in row %}
+                                             <td class="text-center">
+                                                 {% if data['typeVisite'] is not null %}
+                                                     {{data['typeVisite']['libelle'] }}
+                                                 {% endif %}
+                                             </td>
+                                             <td class="text-center">{{ data['formulaire']['titre'] }}</td>
+                                             <td class="text-center td-status">
+                                                 {% if data['formulaire']['actived'] %}
+                                                     <span class="status-actif">ACTIF</span>
+                                                 {% else %}
+                                                     <span class="status-inactif">INACTIF</span>
+                                                 {% endif %}
+                                             </td>
+                                             <td class="text-center">
+                                                 <div class="dropdown">
+                                                     <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                         Action
+                                                     </button>
+                                                     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                                         {# {% if 'PREVALIDATION' in data['typeVisite']['libelle'] %}
+                                                             <a class="dropdown-item" href="{{ path ('editformprevalisation',{'id':data['formulaire']['id']}) }}">Modifier</a>
+                                                         {% else %} #}
+                                                             <a class="dropdown-item" href="{{ path ('editformulaire',{'id':data['formulaire']['id']}) }}">Modifier</a>
+                                                         {# {% endif %} #}
+
+                                                         {% if data['formulaire']['actived'] %}
+                                                             <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('desactiverformulaire',{'id':data['formulaire']['id']}) }},Désactivation,désactiver,ce formulaire : {{data['typeVisite']['libelle'] }}">Désactiver</button>
+                                                         {% else %}
+                                                             <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('activerformulaire',{'id':data['formulaire']['id']}) }},Activation,activer,ce formulaire : {{data['typeVisite']['libelle'] }}">Activer</button>
+                                                         {% endif %}
+                                                         <button type="button" class="dropdown-item" data-toggle="modal" data-target="#confirmeAction" data-whatever="{{ path ('delformulaire',{'id':data['formulaire']['id']}) }},Suppression,supprimer,ce formulaire : {{data['typeVisite']['libelle'] }}">Supprimer</button>
+                                                     </div>
+                                                 </div>
+                                             </td>
+                                         {% endfor %}
+                                     </tr>
+                                 {% endfor %}
+                             </tbody>
+                             <tfoot>
+                             </tfoot>
+                         </table>
+                     {% endif %}
+                 </div>
+                 <!-- ajouter un formulaire  -->
+                 <div class="tab-pane fade {% if tab == "ajouter" %}show active{% endif %}" id="ajouter" role="tabpanel" aria-labelledby="ajouter-tab">
+                     {% if tab == "ajouter"  %}
+
+                         <div class="question_form_container">
+                             <form id="formulaire" action="{{ path('addformulaire') }}" method="post">
+                                 <div class="form-row">
+                                     <div class="col-sm-4">
+                                         <div class="form-group">
+                                             <label for="typevisite">Type visite </label>
+                                             <select name="typevisite" class="custom-select typevisite" id="typevisite" required>
+                                                 <option value="">Choisir un type</option>
+                                                 {% for colonne in typevisite %}
+                                                     {% if colonne['actived'] %}
+                                                         <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             </select>
+                                         </div>
+                                     </div>
+                                     <div class="col-sm-4">
+                                         <div class="form-group">
+                                             <label for="form_title">Titre du formulaire</label>
+                                             <input type="text" class="form-control" id="form_title" name="titre_formulaire" required name="form_title">
+                                         </div>
+                                     </div>
+                                     <div class="col-sm-4">
+                                         <div class="form-group">
+                                             <label for="">Ajouter</label>
+                                             <button type="button" class="btn btn-primary add_section form-control"><i class="icon-add-more"></i> Ajouter une Section</button>
+                                         </div>
+                                     </div>
+                                 </div>
+
+                                 <hr>
+
+                                 <div class="form-row">
+                                     <div class="col-sm-6">
+                                         <label>Ouvrir/Fermer</label>
+                                     </div>
+                                     <div class="col-sm-6 text-right">
+                                         <label class="mr-5">Action</label>
+                                     </div>
+                                 </div>
+
+                                 <div class="sections_panel">
+                                     <div id="section_1" class="card section_item" data-children=".item">
+                                         <div class="card-header card-header-primary ">
+                                             <div class="form-row">
+                                                 <a type="button" data-toggle="collapse" data-parent="#section_1" href="#accordion1" class="collapsed col-sm-1 icon-arrow-down opener text-center mt-2"></a>
+                                                 <div class="col-sm-8">
+                                                     <label>Titre de la Section :</label><input type="text" name="titre_section" placeholder="titre de la section" class="form-control" >
+                                                 </div>
+
+                                                 <div class="col-sm-3 text-right">
+                                                     <div class="btn-group">
+                                                         <button class="btn add_sub_section" data-id="1" data-toggle="tooltip" data-placement="top" title="Ajouter une sous section" type="button"><i class="icon-add-more"></i></button>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                         <div class="item">
+                                             <div id="accordion1" class="collapse" role="tabpanel">
+                                                 <div class="card-body section_content">
+                                                     <div id="sub_section_1" class="card sub_section_item" data-children=".item">
+                                                         <div class="card-header card-header-primary ">
+                                                             <div class="form-row">
+                                                                 <a data-toggle="collapse" data-parent="#sub_section_1" href="#sub_accordion_1" class="collapsed icon-arrow-down col-sm-1 opener text-center mt-2" title="Derouler"></a>
+                                                                 <div class="col-sm-8">
+                                                                     <label>Titre de la Sous-Section :</label><input type="text" name="titre_sous_section" placeholder="titre de la sous-section" class="form-control" >
+                                                                 </div>
+                                                                 <div class="col-sm-3 text-right">
+                                                                     <div class="btn-group">
+                                                                         <button class="btn add_paragraph" data-id="1" data-toggle="tooltip" data-placement="top" title="Ajouter un Paragraphe" type="button"><i class="icon-add-more"></i></button>
+                                                                     </div>
+                                                                 </div>
+                                                             </div>
+                                                         </div>
+                                                         <div class="item">
+                                                             <div id="sub_accordion_1" class="collapse" role="tabpanel">
+                                                                 <div class="card-body sub_section_content">
+                                                                     <div id="paragraph_1" class="card paragraph_item" data-children=".item">
+                                                                         <div class="card-header card-header-primary ">
+                                                                             <div class="form-row">
+                                                                                 <a data-toggle="collapse" data-parent="#paragraph_1" href="#sub_accordion_para_1" class="collapsed icon-arrow-down col-sm-1 opener text-center mt-2"></a>
+                                                                                 <div class="col-sm-8">
+                                                                                     <label>Titre du Paragraphe : </label><input type="text" name="titre_pg" placeholder="titre du Paragraphe" class="form-control">
+                                                                                 </div>
+                                                                                 <div class="col-sm-3 text-right">
+                                                                                     <div class="btn-group">
+                                                                                         <button class="btn add_question" data-id="1" data-toggle="tooltip" data-placement="top" title="Ajouter une Question" type="button"><i class="icon-add-more"></i></button>
+                                                                                     </div>
+                                                                                 </div>
+                                                                             </div>
+                                                                         </div>
+                                                                         <div class="item">
+                                                                             <div id="sub_accordion_para_1" class="collapse" role="tabpanel">
+                                                                                 <div class="card-body paragraph_content form-row">
+
+                                                                                     <div class="col-sm-4 question_item" id="question_item_1">
+                                                                                         <div class="card">
+                                                                                             <div class="card-header card-header-primary">
+                                                                                                 <div class="form-row">
+                                                                                                     <div class="col-sm-12">
+                                                                                                         <span>Question 1</span>
+                                                                                                     </div>
+                                                                                                 </div>
+                                                                                             </div>
+                                                                                             <div class="card-body">
+                                                                                                 <div class="form-group">
+                                                                                                     <div class="form-row border-bottom">
+                                                                                                         <div class="col-sm-6">
+                                                                                                             <label>Mandatory</label>
+                                                                                                         </div>
+                                                                                                         <div class="col-sm-2">
+                                                                                                             <div class="custom-control custom-radio">
+                                                                                                                 <input class="custom-control-input" type="radio" name="mandatory_1" value="oui" data-question_id="1" id="mandatory_oui_1" checked>
+                                                                                                                 <label class="custom-control-label" for="mandatory_oui_1"><small>Oui</small></label>
+                                                                                                             </div>
+                                                                                                         </div>
+                                                                                                         <div class="col-sm-2">
+                                                                                                             <div class="custom-control custom-radio">
+                                                                                                                 <input class="custom-control-input" type="radio" name="mandatory_1" value="non" data-question_id="1" id="mandatory_non_1">
+                                                                                                                 <label class="custom-control-label" for="mandatory_non_1"><small>Non</small></label>
+                                                                                                             </div>
+                                                                                                         </div>
+                                                                                                     </div>
+                                                                                                     <div class="form-row" style="margin-top:35px">
+                                                                                                         <div class="col-sm-6">
+                                                                                                             <label>Appel d\'API</label>
+                                                                                                         </div>
+                                                                                                         <div class="col-sm-2">
+                                                                                                             <div class="custom-control custom-radio">
+                                                                                                                 <input class="custom-control-input" type="radio" name="api_1" value="oui" data-question_id="1" id="api_oui_1" >
+                                                                                                                 <label class="custom-control-label" for="api_oui_1"><small>Oui</small></label>
+                                                                                                             </div>
+                                                                                                         </div>
+                                                                                                         <div class="col-sm-2">
+                                                                                                             <div class="custom-control custom-radio">
+                                                                                                                 <input class="custom-control-input" type="radio" name="api_1" value="non" data-question_id="1" id="api_non_1" checked>
+                                                                                                                 <label class="custom-control-label" for="api_non_1"><small>Non</small></label>
+                                                                                                             </div>
+                                                                                                         </div>
+                                                                                                     </div>
+                                                                                                     <div class="form-row" style="margin-top:35px">
+                                                                                                         <div class="col-sm-6">
+                                                                                                             <div class="custom-control custom-radio">
+                                                                                                                 <input class="custom-control-input selectType" type="radio" data-question_id="1" name="qst_type_1" id="qst_type_champ_1" data-cible-type="#type_champ_select_1" data-start-type="#type_param_select_1" checked>
+                                                                                                                 <label class="custom-control-label" for="qst_type_champ_1"><small>Ajouter une question</small></label>
+                                                                                                             </div>
+                                                                                                         </div>
+
+                                                                                                         <div class="col-sm-6">
+                                                                                                             <div class="custom-control custom-radio">
+                                                                                                                 <input class="custom-control-input selectType" type="radio" data-question_id="1" name="qst_type_1" id="qst_type_param_1" data-cible-type="#type_param_select_1" data-start-type="#type_champ_select_1">
+                                                                                                                 <label class="custom-control-label" for="qst_type_param_1"><small>Sélectionner une question</small></label>
+                                                                                                             </div>
+                                                                                                         </div>
+                                                                                                     </div>
+                                                                                                     <div class="form-row select_type_1">
+                                                                                                         <div class="col-sm-12">
+                                                                                                             <div class="type_item type_champ_select_indicator" id="type_champ_select_1" data-question_id="1" data-textarea-cible="#question_textarea_1">
+
+                                                                                                                 <div class="form-group">
+                                                                                                                     <label>Nom de la question</label>
+                                                                                                                     <input type="text" class="form-control" name="nom_question" required>
+                                                                                                                 </div>
+
+                                                                                                                 <div class="form-group">
+                                                                                                                     <label class="">Type du champ</label>
+                                                                                                                     <select name="type_question" class="custom-select typequestion" >
+                                                                                                                         <option value="">Sélectionner un type</option>
+                                                                                                                         {% for colonne in typechamp %}
+                                                                                                                             <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                                                                                                                         {% endfor %}
+                                                                                                                     </select>
+
+                                                                                                                     <div class="mt-3" id="question_textarea_1" style="display: none">
+                                                                                                                         <textarea name="liste_option" rows="5" class="form-control" placeholder="Renseigner les differentes options ici, séparées de point virgules(;)"></textarea>
+                                                                                                                     </div>
+                                                                                                                 </div>
+                                                                                                             </div>
+
+                                                                                                             <div class="type_item" id="type_param_select_1" style="display: none">
+                                                                                                                 <label class="">Question</label>
+                                                                                                                 <select name="type_question2" class="custom-select" >
+                                                                                                                     <option>Sélectionner un type</option>
+                                                                                                                     {% for colonne in parametre %}
+                                                                                                                         <option value="{{ colonne['id'] }}" data-label="{{ colonne['questionnaire']['libelle'] }}" data-type="{{ colonne['questionnaire']['type'] }}" data-option="{{ colonne['questionnaire']['listeoption'] }}">{{ colonne['questionnaire']['libelle'] }}</option>
+                                                                                                                     {% endfor %}
+                                                                                                                 </select>
+                                                                                                             </div>
+                                                                                                         </div>
+                                                                                                     </div>
+                                                                                                 </div>
+                                                                                             </div>
+                                                                                         </div>
+                                                                                     </div>
+                                                                                 </div>
+                                                                             </div>
+                                                                         </div>
+                                                                     </div>
+
+                                                                 </div>
+                                                             </div>
+                                                         </div>
+                                                     </div>
+
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+
+                                 <textarea name="form_json" style="display: none" id="form_json_container"></textarea>
+
+                                 <div class="form-row">
+                                     <div class="col-sm-12">
+                                         <button type="button" id="submit_form_btn" class="btn btn-primary float-right">Enregistrer</button>
+                                     </div>
+                                 </div>
+
+                             </form>
+                         </div>
+
+                     {% endif %}
+                 </div>
+                 <!-- modifier un formulaire  -->
+                 <div class="tab-pane fade {% if tab == "modifier" %}show active{% endif %}" id="modifier" role="tabpanel" aria-labelledby="modifier-tab">
+                     {% if dataSelect is defined  %}
+                         <div class="question_form_container" id="load_data">
+
+                             <div class="question_form_container">
+                                 <form id="formulaire" action="{{ path('editformulaire',{'id':dataSelect['formulaire']['id']}) }}" method="post">
+                                     <div class="form-row">
+                                         <div class="col-sm-4">
+                                             <div class="form-group">
+                                                 <label for="typevisite">Type visite </label>
+                                                 <select name="typevisite" class="custom-select typevisite" id="typevisite" required>
+                                                     <option value="">Choisir un type</option>
+                                                     {% for colonne in typevisite %}
+                                                         {% if colonne['actived'] %}
+                                                             <option value="{{ colonne['id'] }}" {% if colonne['id'] == dataSelect['typeVisite']['id']  %} selected {% endif %}>{{ colonne['libelle'] }}</option>
+                                                         {% endif %}
+                                                     {% endfor %}
+                                                 </select>
+                                             </div>
+                                         </div>
+                                         <div class="col-sm-4">
+                                             <div class="form-group">
+                                                 <label for="form_title">Titre du formulaire</label>
+                                                 <input type="text" value="{{ dataSelect['formulaire']['titre'] }}" class="form-control" id="form_title" name="titre_formulaire" required name="form_title">
+                                             </div>
+                                         </div>
+                                         <div class="col-sm-4">
+                                             <div class="form-group">
+                                                 <label for="">Ajouter</label>
+                                                 <button type="button" class="btn btn-primary add_section form-control"><i class="icon-add-more"></i> Ajouter une Section</button>
+                                             </div>
+                                         </div>
+                                     </div>
+
+                                     <hr>
+
+                                     <div class="form-row">
+                                         <div class="col-sm-6">
+                                             <label>Ouvrir/Fermer</label>
+                                         </div>
+                                         <div class="col-sm-6 text-right">
+                                             <label class="mr-5">Action</label>
+                                         </div>
+                                     </div>
+
+                                     <div class="sections_panel"></div>
+
+                                     <textarea name="form_json" style="display: none" id="form_json_container"></textarea>
+
+                                     <div class="form-row">
+                                         <div class="col-sm-12">
+                                             <button type="button" id="submit_form_btn" class="btn btn-primary float-right">Enregistrer</button>
+                                         </div>
+                                     </div>
+
+                                 </form>
+                             </div>
+
+
+                         </div>
+
+                     {% endif %}
+                 </div>
+
+                 <!-- ajouter un formulaire2  -->
+                 <div class="tab-pane fade {% if tab == "ajouter2" %}show active{% endif %}" id="ajouter2" role="tabpanel" aria-labelledby="ajouter2-tab">
+                     {% if tab == "ajouter2"  %}
+
+                         <div class="question_form_container">
+                             <form id="formulaire2" action="{{ path('addformprevalisation') }}" method="post">
+                                 <div class="form-row">
+                                     <div class="col-sm-4">
+                                         <div class="form-group">
+                                             <label for="typevisite">Type visite </label>
+                                             <select name="typevisite" class="custom-select typevisite2" id="typevisite2" required>
+                                                 <option value="">Choisir un type</option>
+                                                 {% for colonne in typevisite %}
+                                                     {% if colonne['actived'] %}
+                                                         <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                                                     {% endif %}
+                                                 {% endfor %}
+                                             </select>
+                                         </div>
+                                     </div>
+                                     <div class="col-sm-4">
+                                         <div class="form-group">
+                                             <label for="form_title">Titre du formulaire</label>
+                                             <input type="text" class="form-control" id="form_title2" name="titre_formulaire" required name="form_title">
+                                         </div>
+                                     </div>
+                                     <div class="col-sm-4">
+                                         <div class="form-group">
+                                             <label for="">Ajouter</label>
+                                             <button type="button" class="btn btn-primary add_section2 form-control"><i class="icon-add-more"></i> Ajouter une Section</button>
+                                         </div>
+                                     </div>
+                                 </div>
+
+                                 <hr>
+
+                                 <div class="form-row">
+                                     <div class="col-sm-6">
+                                         <label>Ouvrir/Fermer</label>
+                                     </div>
+                                     <div class="col-sm-6 text-right">
+                                         <label class="mr-5">Action</label>
+                                     </div>
+                                 </div>
+
+                                 <div class="sections_panel2">
+                                     <div id="section_2" class="card section_item2" data-children=".item">
+                                         <div class="card-header card-header-primary ">
+                                             <div class="form-row">
+                                                 <a type="button" data-toggle="collapse" data-parent="#section_2" href="#accordion2" class="collapsed col-sm-1 icon-arrow-down opener text-center mt-2"></a>
+                                                 <div class="col-sm-8">
+                                                     <label>Titre de la Section :</label><input type="text" name="titre_section" placeholder="titre de la section" class="form-control">
+                                                 </div>
+
+                                                 <div class="col-sm-3 text-right">
+                                                     <div class="btn-group">
+                                                        <button class="btn add_paragraph2" data-id="2" data-toggle="tooltip" data-placement="top" title="Ajouter un Paragraphe" type="button"><i class="icon-add-more"></i></button>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                        <div class="item">
+                                            <div id="accordion2" class="collapse" role="tabpanel">
+                                                <div class="card-body section_content2">
+                                                    <div id="paragraph_2" class="card paragraph_item2" data-children=".item">
+                                                        <div class="card-header card-header-primary ">
+                                                            <div class="form-row">
+                                                                <a data-toggle="collapse" data-parent="#paragraph_2" href="#sub_accordion_para_2" class="collapsed icon-arrow-down col-sm-1 opener text-center mt-2"></a>
+                                                                <div class="col-sm-8">
+                                                                    <label>Titre du Paragraphe : </label><input type="text" name="titre_pg2" placeholder="titre du Paragraphe" class="form-control">
+                                                                </div>
+                                                                <div class="col-sm-3 text-right">
+                                                                    <div class="btn-group">
+                                                                        <button class="btn add_question2" data-id="2" data-toggle="tooltip" data-placement="top" title="Ajouter une Question" type="button"><i class="icon-add-more"></i></button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="item">
+                                                            <div id="sub_accordion_para_2" class="collapse" role="tabpanel">
+                                                                <div class="card-body paragraph_content2 form-row">
+
+                                                                    <div class="col-sm-4 question_item2" id="question_item_2">
+                                                                        <div class="card">
+                                                                            <div class="card-header card-header-primary">
+                                                                                <div class="form-row">
+                                                                                    <div class="col-sm-12">
+                                                                                        <span>Question 1</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-body">
+                                                                                <div class="form-group">
+                                                                                    <div class="form-row border-bottom">
+                                                                                        <div class="col-sm-6">
+                                                                                            <label>Mandatory</label>
+                                                                                        </div>
+                                                                                        <div class="col-sm-2">
+                                                                                            <div class="custom-control custom-radio">
+                                                                                                <input class="custom-control-input" type="radio" name="mandatory_2" value="oui" data-question_id="2" id="mandatory_oui_2" checked>
+                                                                                                <label class="custom-control-label" for="mandatory_oui_2"><small>Oui</small></label>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div class="col-sm-2">
+                                                                                            <div class="custom-control custom-radio">
+                                                                                                <input class="custom-control-input" type="radio" name="mandatory_2" value="non" data-question_id="2" id="mandatory_non_2">
+                                                                                                <label class="custom-control-label" for="mandatory_non_2"><small>Non</small></label>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="form-row select_type_2">
+                                                                                        <div class="col-sm-12">
+                                                                                            <div class="type_item type_champ_select_indicator" id="type_champ_select_2" data-question_id="2" data-textarea-cible="#question_textarea_2">
+
+                                                                                                <div class="form-group">
+                                                                                                    <label>Nom de la question</label>
+                                                                                                    <input type="text" class="form-control" name="nom_question" required>
+                                                                                                </div>
+
+                                                                                                <div class="form-group">
+                                                                                                    <label class="">Type du champ</label>
+                                                                                                    <select name="type_question" class="custom-select typequestion2" required>
+                                                                                                        <option value="">Sélectionner un type</option>
+                                                                                                        {% for colonne in typechamp %}
+                                                                                                            <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                                                                                                        {% endfor %}
+                                                                                                    </select>
+
+                                                                                                    <div class="mt-3" id="question_textarea_2" style="display: none">
+                                                                                                        <textarea name="liste_option" rows="5" class="form-control" placeholder="Renseigner les differentes options ici, séparées de point virgules(;)"></textarea>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                     </div>
+                                 </div>
+
+                                 <textarea name="form_json" style="display: none" id="form_json_container2"></textarea>
+
+                                 <div class="form-row">
+                                     <div class="col-sm-12">
+                                         <button type="button" id="submit_form_btn2" class="btn btn-primary float-right">Enregistrer</button>
+                                     </div>
+                                 </div>
+
+                             </form>
+                         </div>
+
+                     {% endif %}
+                 </div>
+                 <!-- modifier un formulaire2  -->
+                 <div class="tab-pane fade {% if tab == "modifier2" %}show active{% endif %}" id="modifier2" role="tabpanel" aria-labelledby="modifier2-tab">
+                     {% if dataSelect is defined  %}
+                         <div class="question_form_container2" id="load_data">
+
+                             <div class="question_form_container2">
+                                 <form id="formulaire2" action="{{ path('editformprevalisation',{'id':dataSelect['formulaire']['id']}) }}" method="post">
+                                     <div class="form-row">
+                                         <div class="col-sm-4">
+                                             <div class="form-group">
+                                                 <label for="typevisite">Type visite </label>
+                                                 <select name="typevisite" class="custom-select typevisite" id="typevisite2" required>
+                                                     <option value="">Choisir un type</option>
+                                                     {% for colonne in typevisite %}
+                                                         {% if colonne['actived'] %}
+                                                             <option value="{{ colonne['id'] }}" {% if colonne['id'] == dataSelect['typeVisite']['id']  %} selected {% endif %}>{{ colonne['libelle'] }}</option>
+                                                         {% endif %}
+                                                     {% endfor %}
+                                                 </select>
+                                             </div>
+                                         </div>
+                                         <div class="col-sm-4">
+                                             <div class="form-group">
+                                                 <label for="form_title">Titre du formulaire</label>
+                                                 <input type="text" value="{{ dataSelect['formulaire']['titre'] }}" class="form-control" id="form_title2" name="titre_formulaire" required name="form_title">
+                                             </div>
+                                         </div>
+                                         <div class="col-sm-4">
+                                             <div class="form-group">
+                                                 <label for="">Ajouter</label>
+                                                 <button type="button" class="btn btn-primary add_section2 form-control"><i class="icon-add-more"></i> Ajouter une Section</button>
+                                             </div>
+                                         </div>
+                                     </div>
+
+                                     <hr>
+                                     <div class="form-row">
+                                         <div class="col-sm-6">
+                                             <label>Ouvrir/Fermer</label>
+                                         </div>
+                                         <div class="col-sm-6 text-right">
+                                             <label class="mr-5">Action</label>
+                                         </div>
+                                     </div>
+
+                                     <div class="sections_panel2"></div>
+
+                                     <textarea name="form_json" style="display: none" id="form_json_container2"></textarea>
+
+                                     <div class="form-row">
+                                         <div class="col-sm-12">
+                                             <button type="button" id="submit_form_btn2" class="btn btn-primary float-right">Enregistrer</button>
+                                         </div>
+                                     </div>
+                                 </form>
+                             </div>
+
+
+                         </div>
+
+                     {% endif %}
+                 </div>
+
+                 <div style="display: none">
+                     <div class="type_champ_select_tag">
+                         <select name="type_question" class="custom-select typequestion2">
+                             <option value="">Sélectionner un type</option>
+                             {% for colonne in typechamp %}
+                                 <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                             {% endfor %}
+                         </select>
+                     </div>
+
+                     <div class="type_champ_select_tag">
+                         <select name="type_question" class="custom-select typequestion">
+                             <option value="">Sélectionner un type</option>
+                             {% for colonne in typechamp %}
+                                 <option value="{{ colonne['id'] }}">{{ colonne['libelle'] }}</option>
+                             {% endfor %}
+                         </select>
+                     </div>
+
+                     <div class="type_param_select_tag">
+                         <select name="type_question2" class="custom-select">
+                             <option>Sélectionner un type</option>
+                             {% for colonne in parametre %}
+                                 <option value="{{ colonne['id'] }}" data-label="{{ colonne['questionnaire']['libelle'] }}" data-type="{{ colonne['questionnaire']['type'] }}" data-option="{{ colonne['questionnaire']['listeoption'] }}">{{ colonne['questionnaire']['libelle'] }}</option>
+                             {% endfor %}
+                         </select>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     </div>
+ {% endblock %}
